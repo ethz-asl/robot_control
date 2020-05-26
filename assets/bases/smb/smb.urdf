@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="mobile_manipulator">
+  <!-- Materials -->
+  <material name="black">
+    <color rgba="0 0 0 255"/>
+  </material>
+  <material name="dark_grey">
+    <color rgba="0 0 0 155 255"/>
+  </material>
+  <material name="blue">
+    <color rgba="0 0 200 255"/>
+  </material>
+  <material name="green">
+    <color rgba="0 200 0 255"/>
+  </material>
+  <material name="grey">
+    <color rgba="50 50 50 255"/>
+  </material>
+  <material name="orange">
+    <color rgba="255 108 10 255"/>
+  </material>
+  <material name="brown">
+    <color rgba="222 207 195 255"/>
+  </material>
+  <material name="red">
+    <color rgba="200 0 0 255"/>
+  </material>
+  <material name="white">
+    <color rgba="255 255 255 255"/>
+  </material>
+  <link name="base">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.605 0.41 0.197"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.605 0.41 0.197"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+  <gazebo reference="base">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  <!-- Fixed joint to add dummy inertia link -->
+  <joint name="base_to_base_inertia" type="fixed">
+    <parent link="base"/>
+    <child link="base_inertia"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <!-- Dummy inertia link, because KDL cannot have inertia on the base link -->
+  <link name="base_inertia">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="40"/>
+      <inertia ixx="0.689696666667" ixy="0" ixz="0" iyy="1.34944666667" iyz="0" izz="1.34944666667"/>
+    </inertial>
+  </link>
+  <joint name="FL_WHEEL" type="continuous">
+    <parent link="base"/>
+    <child link="FL_WHEEL"/>
+    <origin rpy="-1.57079632679 0 0" xyz="0.2159 0.32 -0.0185"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+    <dynamics damping="1.0" friction="0.0"/>
+    <limit effort="1000" velocity="1000"/>
+    <joint_properties damping="0.2" friction="0.2"/>
+  </joint>
+  <link name="FL_WHEEL">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.017" radius="0.19"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.17" radius="0.19"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5"/>
+      <inertia ixx="0.0571666666667" ixy="0" ixz="0" iyy="0.0571666666667" iyz="0" izz="0.09025"/>
+    </inertial>
+  </link>
+  <joint name="FR_WHEEL" type="continuous">
+    <parent link="base"/>
+    <child link="FR_WHEEL"/>
+    <origin rpy="-1.57079632679 0 0" xyz="0.2159 -0.32 -0.0185"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+    <dynamics damping="1.0" friction="0.0"/>
+    <limit effort="1000" velocity="1000"/>
+    <joint_properties damping="0.2" friction="0.2"/>
+  </joint>
+  <link name="FR_WHEEL">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.017" radius="0.19"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.17" radius="0.19"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5"/>
+      <inertia ixx="0.0571666666667" ixy="0" ixz="0" iyy="0.0571666666667" iyz="0" izz="0.09025"/>
+    </inertial>
+  </link>
+  <joint name="BL_WHEEL" type="continuous">
+    <parent link="base"/>
+    <child link="BL_WHEEL"/>
+    <origin rpy="-1.57079632679 0 0" xyz="-0.2159 0.32 -0.0185"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+    <dynamics damping="1.0" friction="0.0"/>
+    <limit effort="1000" velocity="1000"/>
+    <joint_properties damping="0.2" friction="0.2"/>
+  </joint>
+  <link name="BL_WHEEL">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.017" radius="0.19"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.17" radius="0.19"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5"/>
+      <inertia ixx="0.0571666666667" ixy="0" ixz="0" iyy="0.0571666666667" iyz="0" izz="0.09025"/>
+    </inertial>
+  </link>
+  <joint name="BR_WHEEL" type="continuous">
+    <parent link="base"/>
+    <child link="BR_WHEEL"/>
+    <origin rpy="-1.57079632679 0 0" xyz="-0.2159 -0.32 -0.0185"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+    <dynamics damping="1.0" friction="0.0"/>
+    <limit effort="1000" velocity="1000"/>
+    <joint_properties damping="0.2" friction="0.2"/>
+  </joint>
+  <link name="BR_WHEEL">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.017" radius="0.19"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.17" radius="0.19"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5"/>
+      <inertia ixx="0.0571666666667" ixy="0" ixz="0" iyy="0.0571666666667" iyz="0" izz="0.09025"/>
+    </inertial>
+  </link>
+</robot>
