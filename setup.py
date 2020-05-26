@@ -5,5 +5,3 @@ setuptools.setup(name='robot_control',
                  packages=['robot_control', 'robot_control.controllers'],
                  package_dir={'': 'src'},
                  python_requires='>=3.6')
-
-

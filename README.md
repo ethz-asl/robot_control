@@ -1,7 +1,8 @@
 ### Installation
 
 The best way to use `pinocchio` python bindings is using Anaconda. Create a `conda` virtual environment and then install `pinocchio`
-using the instructions reported [here](https://github.com/conda-forge/pinocchio-feedstock). 
+using the instructions reported [here](https://github.com/conda-forge/pinocchio-feedstock). To install this package in the current
+conda environment (after conda has been activate) navigate to this directory and enter `pip install .` 
 
 ### Dependencies
 - `numpy`
