@@ -10,6 +10,7 @@ import math
 import numpy as np
 import pybullet as p
 from scipy.spatial.transform import Rotation as Rotation
+
 from robot_control.robot_wrapper_ros import RobotWrapperRos
 from robot_control.controllers.task_space_controller import TaskSpaceController
 from robot_control.robot_control_utils import TrajectoryGenerator
@@ -64,7 +65,6 @@ class ManipulatorTest:
         self.ee_idx_bullet = self.link_map["end_effector_link"]
 
         self.initial_q = np.array([0., math.pi/8, 0.0, math.pi/2, 0, math.pi/3, -math.pi/2])
-        # self.initial_q = np.array([0.] * 7)
 
         self.initial_rotation = None
         self.initial_position = None
@@ -77,7 +77,6 @@ class ManipulatorTest:
 
     def init_sim(self):
         self.disable_motors()
-
         p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=0, cameraPitch=-40,
                                      cameraTargetPosition=[0.55, -0.35, 0.2])
         # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
@@ -86,16 +85,18 @@ class ManipulatorTest:
         p.setRealTimeSimulation(False)
 
     def sim(self):
+        # Initialize structures with current state
         for i, q in enumerate(self.initial_q):
             p.resetJointState(self.robot, i+1, q)
         self.update_state()
         self.controller.advance(self.q, self.v)
 
+        # Initial position and orientation are used later to compute the target
         R, t, v, w = self.forward_kinematics_bullet()
-
         self.initial_position = t
         self.initial_rotation = R
 
+        # add debug parameters to the pybullet gui
         dxc = p.addUserDebugParameter("dx", -1.0, 1.0, 0.0)
         dyc = p.addUserDebugParameter("dy", -1.0, 1.0, 0.0)
         dzc = p.addUserDebugParameter("dz", -1.0, 1.0, 0.0)
@@ -106,11 +107,12 @@ class ManipulatorTest:
         traj_gen.reset()
         user_input = True
 
+        # publisher for the current desired pose
         desired_pose_publisher = rospy.Publisher("/desired_ee_pose", PoseStamped, queue_size=10)
         desired_pose = PoseStamped()
 
         while True:
-            # set the target
+            # set the target either from user input or using a circular trajectory
             if user_input:
                 dx = p.readUserDebugParameter(dxc)
                 dy = p.readUserDebugParameter(dyc)
@@ -148,22 +150,19 @@ class ManipulatorTest:
 
             # compute and apply control action
             tau = self.controller.advance(self.q, self.v)
-
-            # clean this up
-            self.controller.robot.publish_ros()
-
             self.apply_motor_torques(tau)
-            self.draw_trajectory()
 
-            # advance the simulation
-            self.advance()
+            self.advance_simulation()
 
-    def advance(self):
+    def advance_simulation(self):
         p.stepSimulation()
+        self.draw_trajectory()
+        self.wrapper.publish_ros()
         self.update_state()
         self.report_time()
 
     def report_time(self):
+        """ Sleep additional time if loop is faster """
         # TODO (giuseppe) do some proper reporting
         t = time.time()
         dt = t - self.prev_time
@@ -172,6 +171,7 @@ class ManipulatorTest:
         self.prev_time = t
 
     def draw_trajectory(self):
+        """ Plot the trace of the end effector """
         ls = p.getLinkState(self.robot, self.ee_idx_bullet)  # ls[4] world link frame position
 
         if self.has_prev_pos:
@@ -180,6 +180,7 @@ class ManipulatorTest:
         self.has_prev_pos = True
 
     def update_state(self):
+        """ Read the joints positions and velocities from bullet simulator """
         states = p.getJointStates(self.robot, range(1, 8))
         for idx, state in enumerate(states):
             self.q[idx] = state[0]
@@ -187,6 +188,7 @@ class ManipulatorTest:
             self.tau[idx] = state[3]
 
     def forward_kinematics_bullet(self):
+        """ Compute the forward kinematic relying on bullet """
         state = p.getLinkState(self.robot, self.ee_idx_bullet, computeForwardKinematics=True,
                                computeLinkVelocity=True)
         t = np.array(state[4])
