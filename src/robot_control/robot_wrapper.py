@@ -181,6 +181,13 @@ class RobotWrapper:
         """
         return self.data.M
 
+    def get_inertia_inverse(self):
+        """
+        :return: the inverse of the inertia matrix
+        """
+        pin.computeMinverse(self.model, self.data, self.q)
+        return self.data.Minv
+
     def get_nonlinear_terms(self):
         """
         :return: the non linear effects given by the gravity and coriolis terms.
