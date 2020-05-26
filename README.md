@@ -23,6 +23,8 @@ where a robotic arm is controller and results are checked in a pybullet simulati
 ### TODO 
 [x] Test with basic controllers
 
+[ ] Urdf based actuation limiter
+ 
 [ ] Updated setup script 
 
 [ ] Better way to handle python2.7 / python3.x

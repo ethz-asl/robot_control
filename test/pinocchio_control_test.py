@@ -105,12 +105,13 @@ class ManipulatorTest:
         dyawc = p.addUserDebugParameter("dyaw", -180.0, 180.0, 0.0)
         traj_gen = TrajectoryGenerator()
         traj_gen.reset()
-        user_input = True
+        user_input = False
 
         # publisher for the current desired pose
         desired_pose_publisher = rospy.Publisher("/desired_ee_pose", PoseStamped, queue_size=10)
         desired_pose = PoseStamped()
 
+        task_target = pin.SE3(self.initial_rotation, self.initial_position)
         while True:
             # set the target either from user input or using a circular trajectory
             if user_input:
@@ -126,27 +127,27 @@ class ManipulatorTest:
                 dR = Rotation.from_euler(seq='xyz', angles=[droll, dpitch, dyaw], degrees=True)
                 target_rotation = dR.as_matrix().dot(self.initial_rotation)
                 task_target = pin.SE3(target_rotation, target_position)
-
-                desired_pose.header.stamp = rospy.get_rostime()
-                desired_pose.header.frame_id = "base_link"
-                desired_pose.pose.position.x = target_position[0]
-                desired_pose.pose.position.y = target_position[1]
-                desired_pose.pose.position.z = target_position[2]
-                quat = Rotation.from_matrix(target_rotation).as_quat()
-                desired_pose.pose.orientation.x = quat[0]
-                desired_pose.pose.orientation.y = quat[1]
-                desired_pose.pose.orientation.z = quat[2]
-                desired_pose.pose.orientation.w = quat[3]
-                desired_pose_publisher.publish(desired_pose)
-
                 self.controller.set_task_target(task_target)
             else:
                 pos, orn = traj_gen.advance_circular_trajectory(max_angle=np.pi*2.)
                 pos = self.initial_position + pos
-                pos[0] -= 0.10
+                pos[0] -= traj_gen.get_radius()
                 orn = Rotation.from_quat(orn).as_matrix()
                 task_target = pin.SE3(orn, pos)
                 self.controller.set_task_target(task_target)
+
+            # publish target over ros
+            desired_pose.header.stamp = rospy.get_rostime()
+            desired_pose.header.frame_id = "base_link"
+            desired_pose.pose.position.x = task_target.translation[0]
+            desired_pose.pose.position.y = task_target.translation[1]
+            desired_pose.pose.position.z = task_target.translation[2]
+            quat = Rotation.from_matrix(task_target.rotation).as_quat()
+            desired_pose.pose.orientation.x = quat[0]
+            desired_pose.pose.orientation.y = quat[1]
+            desired_pose.pose.orientation.z = quat[2]
+            desired_pose.pose.orientation.w = quat[3]
+            desired_pose_publisher.publish(desired_pose)
 
             # compute and apply control action
             tau = self.controller.advance(self.q, self.v)
