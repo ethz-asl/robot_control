@@ -12,7 +12,7 @@ using the instructions reported [here](https://github.com/conda-forge/pinocchio-
 
 Ros uses by default python2.7 while this package requires `python3.6`. The quickest method to use the library together with 
 ros was to set the correct python executable at the beginning of each file. Look at [this script](test/pinocchio_control_test.py) for an example. 
-You will need to change this to your corresponding path. 
+You will need to change this to your corresponding path. Additionally, I had to install rospkg for python 3.x (`pip3 install rospkg`)
 
 ### Examples
 
@@ -21,7 +21,11 @@ where a robotic arm is controller and results are checked in a pybullet simulati
 
 ### TODO 
 [x] Test with basic controllers
+
 [ ] Updated setup script 
+
 [ ] Better way to handle python2.7 / python3.x
+
 [ ] CI
+
 [ ] Arm generic test
