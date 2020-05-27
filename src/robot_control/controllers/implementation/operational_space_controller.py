@@ -3,14 +3,13 @@ import pinocchio as pin
 from scipy.spatial.transform import Rotation
 
 from robot_control.robot_wrapper import RobotWrapper
-from robot_control.robot_control_utils import get_nullspace
 from robot_control.controllers.robot_controller_base import RobotControllerBase
 
 
-class TaskSpaceController(RobotControllerBase):
+class OperationalSpaceController(RobotControllerBase):
     def __init__(self, robot, controlled_frame):
-        super(TaskSpaceController, self).__init__(robot)
-
+        super(OperationalSpaceController, self).__init__(robot)
+        self.controller_name = "op_space_controller"
         assert isinstance(robot, RobotWrapper)
         self.robot = robot
         self.controlled_frame = controlled_frame
@@ -19,14 +18,13 @@ class TaskSpaceController(RobotControllerBase):
         self.task_target = pin.SE3(np.eye(3), np.zeros((3, 1)))
         self.task_target_set = False
 
-        # Task space gains
-        self.kp = np.diag([10.0, 10.0, 10.0, 10.0, 10.0, 10.0])
-        self.kd = np.diag([10, 10, 10, 10, 10, 10])
+        # Operational space gains
+        self.kp = np.diag([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.kd = np.diag([10.0] * 6)
 
-        # null space variables
-        self.kqd_ns = np.diag([0.01] * self.robot.get_dof())
-        self.kqp_res = np.diag([0.01] * self.robot.get_dof())
-        self.q_rest = self.robot.get_neutral_configuration()
+        # store for re-usage
+        self.j = None
+        self.dj = None
 
     def set_kp(self, kp):
         self.kp = kp
@@ -40,17 +38,15 @@ class TaskSpaceController(RobotControllerBase):
         self.task_target_set = True
 
     def compute_command(self):
-        if not self.task_target_set:
-            print("Task target is not set yet")
-            return
-
-        pose_des = self.task_target
         pose_current = self.robot.get_frame_placement(self.controlled_frame)
+        pose_des = self.task_target
+        if not self.task_target_set:
+            pose_des = pose_current
 
         # pose error (local frame)
-        dR = Rotation.from_matrix(pose_current.rotation.transpose().dot(pose_des.rotation)).as_quat()
+        dR = Rotation.from_matrix(pose_current.rotation.T.dot(pose_des.rotation)).as_quat()
         rotation_err = 2 * dR[3] * dR[:3]
-        position_err = pose_current.rotation.transpose().dot(pose_des.translation - pose_current.translation)
+        position_err = pose_current.rotation.T.dot(pose_des.translation - pose_current.translation)
         p_err = np.hstack([position_err, rotation_err])
 
         # velocity error (local frame)
@@ -59,13 +55,21 @@ class TaskSpaceController(RobotControllerBase):
         v_err = v_des - v_current
 
         j, dj = self.robot.get_all_frame_jacobians(self.controlled_frame)
+        self.j = j
+        self.dj = dj
         self.robot.compute_all_terms()
 
-        y = np.linalg.pinv(j, rcond=0.01).dot(self.kp.dot(p_err) + self.kd.dot(v_err) - dj.dot(self.robot.get_v()))
-        eps = -self.kqd_ns.dot(self.robot.get_v()) - self.kqp_res.dot(self.robot.get_q() - self.q_rest)
-        tau_null_space = get_nullspace(j).dot(eps)
-        tau = self.robot.get_inertia().dot(y) + self.robot.get_nonlinear_terms() + tau_null_space
+        # end effector inertia matrix
+        qd = self.robot.get_v()
+        M_inv = self.robot.get_inertia_inverse()
+        M_ee_inv = np.dot(j, np.dot(M_inv, j.T))
+
+        # ! increasing the condition number causes the controller not to work
+        # TODO (giuseppe) investigate this further
+        M_ee = np.linalg.pinv(M_ee_inv, rcond=0.00001)
+
+        w_d = self.kp.dot(p_err) + self.kd.dot(v_err)
+        tau_acc = j.T.dot(M_ee.dot(w_d - dj.dot(qd)))
+        tau = tau_acc + self.robot.get_nonlinear_terms()
         return tau
-
-
 

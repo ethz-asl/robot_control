@@ -4,9 +4,9 @@ from robot_control.robot_wrapper import RobotWrapper
 from robot_control.controllers.robot_controller_base import RobotControllerBase
 
 
-class TaskSpaceController(RobotControllerBase):
+class JointSpaceController(RobotControllerBase):
     def __init__(self, robot, controlled_frame):
-        super(TaskSpaceController, self).__init__(robot)
+        super(JointSpaceController, self).__init__(robot)
 
         assert isinstance(robot, RobotWrapper)
         self.robot = robot

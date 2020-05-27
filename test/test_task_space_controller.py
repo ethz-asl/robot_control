@@ -12,7 +12,7 @@ import pybullet as p
 from scipy.spatial.transform import Rotation as Rotation
 
 from robot_control.robot_wrapper_ros import RobotWrapperRos
-from robot_control.controllers.task_space_controller import TaskSpaceController
+from robot_control.controllers.implementation.task_space_controller import TaskSpaceController
 from robot_control.robot_control_utils import TrajectoryGenerator
 
 from geometry_msgs.msg import PoseStamped
@@ -50,13 +50,6 @@ class ManipulatorTest:
         self.wrapper.init_from_urdf(URDF_PATH)
         self.wrapper.init_joint_structure()
         self.controller = TaskSpaceController(self.wrapper, "end_effector_link")
-
-        self.model = pin.buildModelFromUrdf(URDF_PATH)
-        self.data = self.model.createData()
-        self.ee_idx = self.model.getFrameId("end_effector_link")
-
-        print("Ee link index is: {}".format(self.ee_idx))
-        print("model name = {}".format(self.model.name))
 
         # Other vars
         self.timestep = 0.01  # 1/240.
@@ -105,7 +98,7 @@ class ManipulatorTest:
         dyawc = p.addUserDebugParameter("dyaw", -180.0, 180.0, 0.0)
         traj_gen = TrajectoryGenerator()
         traj_gen.reset()
-        user_input = False
+        user_input = True
 
         # publisher for the current desired pose
         desired_pose_publisher = rospy.Publisher("/desired_ee_pose", PoseStamped, queue_size=10)

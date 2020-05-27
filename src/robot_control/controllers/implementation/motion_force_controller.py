@@ -1,4 +1,5 @@
 # TODO (giuseppe) split dependency from ROS
+# TODO just copy past of operational space controller at the moment
 import rospy
 from geometry_msgs.msg import WrenchStamped
 

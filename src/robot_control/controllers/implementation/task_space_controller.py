@@ -3,12 +3,13 @@ import pinocchio as pin
 from scipy.spatial.transform import Rotation
 
 from robot_control.robot_wrapper import RobotWrapper
+from robot_control.robot_control_utils import get_nullspace
 from robot_control.controllers.robot_controller_base import RobotControllerBase
 
 
-class ImpedanceController(RobotControllerBase):
+class TaskSpaceController(RobotControllerBase):
     def __init__(self, robot, controlled_frame):
-        super(ImpedanceController, self).__init__(robot)
+        super(TaskSpaceController, self).__init__(robot)
 
         assert isinstance(robot, RobotWrapper)
         self.robot = robot
@@ -39,27 +40,30 @@ class ImpedanceController(RobotControllerBase):
         self.task_target_set = True
 
     def compute_command(self):
-        # Not working yet
-        # TODO (giuseppe) switch to end effector dynamics
-        if not self.task_target_set:
-            print("Task target is not set yet")
-            return
-
-        pose_des = self.task_target
         pose_current = self.robot.get_frame_placement(self.controlled_frame)
+        pose_des = self.task_target
+        if not self.task_target_set:
+            pose_des = pose_current
 
-        # compute rotation error
+        # pose error (local frame)
         dR = Rotation.from_matrix(pose_current.rotation.transpose().dot(pose_des.rotation)).as_quat()
         rotation_err = 2 * dR[3] * dR[:3]
-        dp = np.hstack([pose_des.translation - pose_current.translation, rotation_err])
+        position_err = pose_current.rotation.transpose().dot(pose_des.translation - pose_current.translation)
+        p_err = np.hstack([position_err, rotation_err])
 
-        v = self.robot.get_frame_velocity(self.controlled_frame, pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
-        dv = -v.vector
-        f = self.kp.dot(dp) + self.kd.dot(dv)
+        # velocity error (local frame)
+        v_des = pin.log(pose_current.actInv(pose_des)).vector
+        v_current = self.robot.get_frame_velocity(self.controlled_frame, pin.ReferenceFrame.LOCAL)
+        v_err = v_des - v_current
 
+        j, dj = self.robot.get_all_frame_jacobians(self.controlled_frame)
         self.robot.compute_all_terms()
-        j = self.robot.get_frame_jacobian(self.controlled_frame, ref=pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
-        y = j.transpose().dot(f)
-        tau = y + self.robot.get_nonlinear_terms()
+
+        y = np.linalg.pinv(j, rcond=0.01).dot(self.kp.dot(p_err) + self.kd.dot(v_err) - dj.dot(self.robot.get_v()))
+        eps = -self.kqd_ns.dot(self.robot.get_v()) - self.kqp_res.dot(self.robot.get_q() - self.q_rest)
+        tau_null_space = get_nullspace(j).dot(eps)
+        tau = self.robot.get_inertia().dot(y) + self.robot.get_nonlinear_terms() + tau_null_space
         return tau
+
+
 

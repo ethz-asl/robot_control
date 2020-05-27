@@ -1,6 +1,10 @@
 class RobotControllerBase:
     def __init__(self, robot):
         self.robot = robot
+        self.controller_name = ""
+
+    def get_name(self):
+        return self.controller_name
 
     def compute_command(self):
         raise NotImplementedError("This method needs to be implemented.")
