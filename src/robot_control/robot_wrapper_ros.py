@@ -39,3 +39,6 @@ class RobotWrapperRos(RobotWrapper):
     def publish_ros(self):
         self.fill_joint_state()
         self.joint_state_publisher.publish(self.joint_state)
+
+    # TODO (giuseppe) method to get only the gravity terms
+    # TODO (giuseppe) method to get only the coriolis terms

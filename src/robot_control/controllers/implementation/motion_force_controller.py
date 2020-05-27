@@ -11,13 +11,14 @@ from robot_control.robot_wrapper import RobotWrapper
 from robot_control.controllers.robot_controller_base import RobotControllerBase
 
 
-class OperationalSpaceController(RobotControllerBase):
+class MotionForceController(RobotControllerBase):
     def __init__(self, robot, controlled_frame):
-        super(OperationalSpaceController, self).__init__(robot)
+        super(MotionForceController, self).__init__(robot)
 
         assert isinstance(robot, RobotWrapper)
         self.robot = robot
         self.controlled_frame = controlled_frame
+        self.controller_name = "motion_force_controller"
 
         # Target is assumed to be in a world frame
         self.task_target = pin.SE3(np.eye(3), np.zeros((3, 1)))
@@ -27,6 +28,10 @@ class OperationalSpaceController(RobotControllerBase):
         self.kp = np.diag([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.kd = np.diag([10.0] * 6)
 
+        self.Sm = np.eye(6)                 # motion selection matrix
+        self.Sf = np.zeros((6, 6))          # force selection matrix
+        self.f = np.zeros(6)                # desired target wrench
+
         self.wrench_ee = WrenchStamped()
         self.wrench_publisher = rospy.Publisher("/wrench_ee", WrenchStamped, queue_size=10)
 
@@ -35,6 +40,19 @@ class OperationalSpaceController(RobotControllerBase):
 
     def set_kd(self, kd):
         self.kd = kd
+
+    def set_Sm(self, Sm):
+        self.Sm = Sm
+
+    def set_Sf(self, Sf):
+        self.Sf = Sf
+
+    def set_wrench_target(self, f):
+        assert len(f) == 6
+        self.f = f
+
+    def get_target_wrench(self):
+        return self.f
 
     def set_task_target(self, task_target):
         assert isinstance(task_target, pin.SE3)
@@ -72,8 +90,9 @@ class OperationalSpaceController(RobotControllerBase):
         # TODO (giuseppe) investigate this further
         M_ee = np.linalg.pinv(M_ee_inv, rcond=0.00001)
 
-        w_d = self.kp.dot(p_err) + self.kd.dot(v_err)
-        tau_acc = j.T.dot(M_ee.dot(w_d - dj.dot(qd)))
+        w_d = self.Sm.dot(self.kp.dot(p_err) + self.kd.dot(v_err))
+        f = self.Sf.dot(self.f)
+        tau_acc = j.T.dot(M_ee.dot(w_d - dj.dot(qd)) + f)
         tau = tau_acc + self.robot.get_nonlinear_terms()
 
         # TODO (giuseppe) debug, remove later or add to external tool

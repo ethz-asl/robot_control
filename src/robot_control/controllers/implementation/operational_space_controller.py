@@ -20,7 +20,7 @@ class OperationalSpaceController(RobotControllerBase):
 
         # Operational space gains
         self.kp = np.diag([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        self.kd = np.diag([10.0] * 6)
+        self.kd = np.diag([1.0] * 6)
 
         # store for re-usage
         self.j = None

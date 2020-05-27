@@ -196,7 +196,7 @@ class RobotWrapper:
 
     def compute_all_terms(self):
         """
-        Compute all the terms M, non linear effects and Jacobians inin the same loop.
+        Compute all the terms M, non linear effects and Jacobians in the same loop.
         """
         pin.computeAllTerms(self.model, self.data, self.q, self.v)
 
