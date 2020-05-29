@@ -3,7 +3,7 @@
 import rospy
 from sensor_msgs.msg import JointState
 
-from robot_control.robot_wrapper import RobotWrapper
+from robot_control.modeling import RobotWrapper
 
 
 class RobotWrapperRos(RobotWrapper):

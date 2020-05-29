@@ -1,7 +1,7 @@
 import numpy as np
 
-from robot_control.robot_wrapper import RobotWrapper
-from robot_control.controllers.robot_controller_base import RobotControllerBase
+from robot_control.modeling import RobotWrapper
+from robot_control.controllers import RobotControllerBase
 
 
 class JointSpaceController(RobotControllerBase):

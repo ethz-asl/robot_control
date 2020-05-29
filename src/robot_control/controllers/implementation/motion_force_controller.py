@@ -1,14 +1,9 @@
-# TODO (giuseppe) split dependency from ROS
-# TODO just copy past of operational space controller at the moment
-import rospy
-from geometry_msgs.msg import WrenchStamped
-
 import numpy as np
 import pinocchio as pin
 from scipy.spatial.transform import Rotation
 
-from robot_control.robot_wrapper import RobotWrapper
-from robot_control.controllers.robot_controller_base import RobotControllerBase
+from robot_control.modeling import RobotWrapper
+from robot_control.controllers import RobotControllerBase
 
 
 class MotionForceController(RobotControllerBase):
@@ -31,9 +26,6 @@ class MotionForceController(RobotControllerBase):
         self.Sm = np.eye(6)                 # motion selection matrix
         self.Sf = np.zeros((6, 6))          # force selection matrix
         self.f = np.zeros(6)                # desired target wrench
-
-        self.wrench_ee = WrenchStamped()
-        self.wrench_publisher = rospy.Publisher("/wrench_ee", WrenchStamped, queue_size=10)
 
     def set_kp(self, kp):
         self.kp = kp
@@ -95,18 +87,4 @@ class MotionForceController(RobotControllerBase):
         tau_acc = j.T.dot(M_ee.dot(w_d - dj.dot(qd)) + f)
         tau = tau_acc + self.robot.get_nonlinear_terms()
 
-        # TODO (giuseppe) debug, remove later or add to external tool
-        self.publish_wrench(np.dot(np.linalg.pinv(j.T, rcond=0.001), tau_acc))
-        np.set_printoptions(precision=2)
         return tau
-
-    def publish_wrench(self, f):
-        self.wrench_ee.header.stamp = rospy.get_rostime()
-        self.wrench_ee.header.frame_id = self.controlled_frame
-        self.wrench_ee.wrench.force.x = f[0]
-        self.wrench_ee.wrench.force.y = f[1]
-        self.wrench_ee.wrench.force.z = f[2]
-        self.wrench_ee.wrench.torque.x = f[3]
-        self.wrench_ee.wrench.torque.y = f[4]
-        self.wrench_ee.wrench.torque.z = f[5]
-        self.wrench_publisher.publish(self.wrench_ee)

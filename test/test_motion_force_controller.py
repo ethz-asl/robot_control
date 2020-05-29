@@ -1,6 +1,7 @@
 #! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
 
 import rospy
+from geometry_msgs.msg import WrenchStamped
 import pinocchio as pin
 
 import time
@@ -9,11 +10,12 @@ import os
 import math
 import numpy as np
 import pybullet as p
+import pybullet_data
 from scipy.spatial.transform import Rotation as Rotation
 
-from robot_control.robot_wrapper_ros import RobotWrapperRos
+from robot_control.modeling import RobotWrapperRos
 from robot_control.controllers.implementation import MotionForceControllerRos
-from robot_control.robot_control_utils import TrajectoryGenerator
+from robot_control.controllers.utilities import TrajectoryGenerator
 
 from geometry_msgs.msg import PoseStamped
 
@@ -38,6 +40,14 @@ class ManipulatorTest:
                                 useFixedBase=True,
                                 basePosition=[0.0, 0.0, 0.0],
                                 flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT | p.URDF_USE_INERTIA_FROM_FILE)
+
+        self.table = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "table/table.urdf"),
+                                basePosition=[0.5, 0, -0.65],
+                                useFixedBase=True)
+        self.object = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "random_urdfs/000/000.urdf"),
+                                 basePosition=[0.5, 0, 0.1])
+
+        print(get_link_name_idx_map(self.table))
 
         self.dof = p.getNumJoints(self.robot)
         self.q = np.ndarray((7, ), dtype=float)
@@ -67,6 +77,11 @@ class ManipulatorTest:
         # drawing
         self.prev_pose = None
         self.has_prev_pos = False
+
+        # end effector wrench
+        p.enableJointForceTorqueSensor(self.robot, self.ee_idx_bullet-2)
+        self.measured_wrench = WrenchStamped()
+        self.measured_wrench_publisher = rospy.Publisher("bullet/ee_wrench", WrenchStamped, queue_size=10)
 
     def init_sim(self):
         self.disable_motors()
@@ -165,6 +180,7 @@ class ManipulatorTest:
     def advance_simulation(self):
         p.stepSimulation()
         self.draw_trajectory()
+        self.get_contact_wrench()
         self.wrapper.publish_ros()
         self.update_state()
         self.report_time()
@@ -219,6 +235,49 @@ class ManipulatorTest:
     def apply_motor_torques(self, tau):
         assert len(tau) == 7
         p.setJointMotorControlArray(self.robot, range(1, 8), p.TORQUE_CONTROL, forces=tau)
+
+    def get_contact_wrench(self):
+        points = p.getContactPoints(self.robot, self.table, self.ee_idx_bullet-1, -1)
+
+        normal_vector_world = np.zeros(3)
+        for point in points:
+            normal_force = point[9]
+            normal_direction = np.array(point[7])
+            normal_vector_world += normal_force * normal_direction
+
+        self.measured_wrench.header.stamp = rospy.get_rostime()
+        self.measured_wrench.header.frame_id = "base_link"
+        self.measured_wrench.wrench.force.x = normal_vector_world[0]
+        self.measured_wrench.wrench.force.y = normal_vector_world[1]
+        self.measured_wrench.wrench.force.z = normal_vector_world[2]
+        self.measured_wrench_publisher.publish(self.measured_wrench)
+
+    def publish_ft_measurements(self):
+        # TODO does not seem to work
+        joint_state = p.getJointState(self.robot, self.ee_idx_bullet-2)
+        link_state = p.getLinkState(self.robot, self.ee_idx_bullet-2, computeForwardKinematics=True)
+        r_ij = p.getMatrixFromQuaternion(link_state[-1])
+        # r_ij = p.getMatrixFromQuaternion(link_state[1])
+        react = joint_state[2]
+        # print("measured: " + str(react))
+        # print("applied: " + str(joint_state[3]))
+
+        # Rotation world to link frame
+        # R_e_w = np.array([r_ij[:3], r_ij[3:6], r_ij[6:]]).transpose()
+        R_e_w = np.eye(3)
+        w_F = -np.array([react[0], react[1], react[2]])
+        w_M = -np.array([react[3], react[4], react[5]])
+        e_F = R_e_w.dot(w_F)
+        e_M = R_e_w.dot(w_M)
+        self.measured_wrench.header.stamp = rospy.get_rostime()
+        self.measured_wrench.header.frame_id = "spherical_wrist_2_link"
+        self.measured_wrench.wrench.force.x = e_F[0]
+        self.measured_wrench.wrench.force.y = e_F[1]
+        self.measured_wrench.wrench.force.z = e_F[2]
+        self.measured_wrench.wrench.torque.x = e_M[0]
+        self.measured_wrench.wrench.torque.y = e_M[1]
+        self.measured_wrench.wrench.torque.z = 0 # e_M[2]
+        self.measured_wrench_publisher.publish(self.measured_wrench)
 
 
 if __name__ == "__main__":

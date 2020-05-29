@@ -2,9 +2,9 @@ import numpy as np
 import pinocchio as pin
 from scipy.spatial.transform import Rotation
 
-from robot_control.robot_wrapper import RobotWrapper
-from robot_control.robot_control_utils import get_nullspace
-from robot_control.controllers.robot_controller_base import RobotControllerBase
+from robot_control.modeling import RobotWrapper
+from robot_control.controllers import RobotControllerBase
+from robot_control.controllers.utilities import get_nullspace
 
 
 class TaskSpaceController(RobotControllerBase):
