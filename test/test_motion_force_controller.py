@@ -234,7 +234,9 @@ class ManipulatorTest:
 
     def apply_motor_torques(self, tau):
         assert len(tau) == 7
-        p.setJointMotorControlArray(self.robot, range(1, 8), p.TORQUE_CONTROL, forces=tau)
+        for i in range(1, 8):
+            p.setJointMotorControl2(self.robot, i, p.TORQUE_CONTROL, force=tau[i-1])
+        # p.setJointMotorControlArray(self.robot, range(1, 8), p.TORQUE_CONTROL, forces=tau)
 
     def get_contact_wrench(self):
         points = p.getContactPoints(self.robot, self.table, self.ee_idx_bullet-1, -1)
