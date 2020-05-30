@@ -11,9 +11,9 @@ import numpy as np
 import pybullet as p
 from scipy.spatial.transform import Rotation as Rotation
 
-from robot_control.robot_wrapper_ros import RobotWrapperRos
+from robot_control.modeling import RobotWrapperRos
 from robot_control.controllers.implementation.operational_space_controller_ros import OperationalSpaceControllerRos
-from robot_control.robot_control_utils import TrajectoryGenerator
+from robot_control.controllers.utilities import TrajectoryGenerator
 
 from geometry_msgs.msg import PoseStamped
 

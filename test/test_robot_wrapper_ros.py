@@ -3,7 +3,7 @@
 import os
 import rospy
 
-from robot_control.robot_wrapper_ros import RobotWrapperRos
+from robot_control.modeling import RobotWrapperRos
 
 rospy.init_node("robot_wrapper_ros_test")
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "assets", )
