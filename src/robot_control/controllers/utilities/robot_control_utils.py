@@ -1,3 +1,6 @@
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 import time
 import numpy as np
 from scipy.spatial.transform import Rotation

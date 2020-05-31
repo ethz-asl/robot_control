@@ -1,3 +1,6 @@
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 from robot_control.simulation import get_actuated_joints_info
 
 

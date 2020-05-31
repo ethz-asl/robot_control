@@ -1,3 +1,6 @@
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 import numpy as np
 import pybullet as p
 from scipy.spatial.transform import Rotation as Rotation

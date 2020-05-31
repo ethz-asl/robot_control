@@ -1,4 +1,6 @@
-import numpy as np
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 import pybullet as p
 from robot_control.simulation import get_actuated_joints_info
 

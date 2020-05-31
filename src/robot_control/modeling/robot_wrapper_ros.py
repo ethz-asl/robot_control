@@ -1,4 +1,6 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 
 import rospy
 from sensor_msgs.msg import JointState

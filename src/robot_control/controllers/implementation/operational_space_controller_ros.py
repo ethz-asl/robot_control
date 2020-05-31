@@ -1,3 +1,6 @@
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 import rospy
 from geometry_msgs.msg import PoseStamped, WrenchStamped
 

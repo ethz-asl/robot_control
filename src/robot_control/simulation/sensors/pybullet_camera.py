@@ -1,3 +1,6 @@
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 # TODO (giuseppe) attach the camera to some link given offset
 # this is just a copy past of a snippet for a hint implementation
 

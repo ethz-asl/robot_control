@@ -1,3 +1,6 @@
+# Created by Giuseppe Rizzi
+# email grizzi@mavt.ehtz.ch
+
 import numpy as np
 
 from robot_control.modeling import RobotWrapper
