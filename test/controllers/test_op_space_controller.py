@@ -1,101 +1,77 @@
 #! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
 
 import rospy
+from geometry_msgs.msg import WrenchStamped
 import pinocchio as pin
-
-import time
 
 import os
 import math
 import numpy as np
 import pybullet as p
+import pybullet_data
 from scipy.spatial.transform import Rotation as Rotation
 
 from robot_control.modeling import RobotWrapperRos
-from robot_control.controllers.implementation.operational_space_controller_ros import OperationalSpaceControllerRos
+from robot_control.simulation import PybulletRobotWrapper, JointCommandType, PyBulletSimulationBase
+from robot_control.simulation import DebugPose
+from robot_control.controllers.implementation import OperationalSpaceControllerRos
 from robot_control.controllers.utilities import TrajectoryGenerator
 
 from geometry_msgs.msg import PoseStamped
 
-p.connect(p.GUI)
-ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "assets",)
+ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
 URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
 
 
-def get_link_name_idx_map(obj_id):
-    link_idx_map = {p.getBodyInfo(obj_id)[0].decode('UTF-8'): -1, }
-    for idx in range(p.getNumJoints(obj_id)):
-        name = p.getJointInfo(obj_id, idx)[12].decode('UTF-8')
-        link_idx_map[name] = idx
-    return link_idx_map
+class TestOpSpaceController(PyBulletSimulationBase):
+    def __init__(self, time_step):
+        super(TestOpSpaceController, self).__init__(time_step=time_step)
 
+        # Manipulator simulation object
+        self.robot_sim = PybulletRobotWrapper(URDF_PATH, [0.0, 0.0, 0.0], fixed_base=True)
+        self.robot_sim.enable_ft_sensor("end_effector_link")
+        self.robot_sim.disable_motors()
 
-class ManipulatorTest:
-    def __init__(self):
-
-        # Manipulator
-        self.robot = p.loadURDF(URDF_PATH,
-                                useFixedBase=True,
-                                basePosition=[0.0, 0.0, 0.0],
-                                flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT | p.URDF_USE_INERTIA_FROM_FILE)
-
-        self.dof = p.getNumJoints(self.robot)
-        self.q = np.ndarray((7, ), dtype=float)
-        self.v = np.ndarray((7, ), dtype=float)
-        self.tau = np.ndarray((7,), dtype=float)
-        print("The robot has {} dofs".format(self.dof))
-
-        # Pinocchio based model and controller
+        # Manipulator for modeling
         self.wrapper = RobotWrapperRos()
         self.wrapper.init_from_urdf(URDF_PATH)
         self.wrapper.init_joint_structure()
         self.controller = OperationalSpaceControllerRos(self.wrapper, "end_effector_link")
 
+        # Other objects in the scene
+        self.table = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "table/table.urdf"),
+                                basePosition=[0.5, 0, -0.65],
+                                useFixedBase=True)
+        self.object = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "random_urdfs/000/000.urdf"),
+                                 basePosition=[0.5, 0, 0.1])
+
         # Other vars
-        self.timestep = 0.01  # 1/240.
-        self.slowdown_factor = 1
-        self.link_map = get_link_name_idx_map(self.robot)
-        self.ee_idx_bullet = self.link_map["end_effector_link"]
-
         self.initial_q = np.array([0., math.pi/8, 0.0, math.pi/2, 0, math.pi/3, -math.pi/2])
-
         self.initial_rotation = None
         self.initial_position = None
-        self.prev_time = time.time()
-        print(self.link_map)
 
-        # drawing
-        self.prev_pose = None
-        self.has_prev_pos = False
+        # end effector wrench
+        self.measured_wrench = WrenchStamped()
+        self.measured_wrench_publisher = rospy.Publisher("bullet/ee_wrench", WrenchStamped, queue_size=10)
 
-    def init_sim(self):
-        self.disable_motors()
-        p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=0, cameraPitch=-40,
-                                     cameraTargetPosition=[0.55, -0.35, 0.2])
-        # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
-        p.setGravity(0, 0, -9.81)
-        p.setTimeStep(self.timestep)
-        p.setRealTimeSimulation(False)
+        # init simulation state
+        self.initialize()
 
-    def sim(self):
+    def initialize(self):
         # Initialize structures with current state
-        for i, q in enumerate(self.initial_q):
-            p.resetJointState(self.robot, i+1, q)
-        self.update_state()
-        self.controller.advance(self.q, self.v)
+        self.robot_sim.set_joint_state(self.initial_q)
+        q, v = self.robot_sim.update_state()
+        self.controller.advance(q, v)
 
         # Initial position and orientation are used later to compute the target
-        R, t, v, w = self.forward_kinematics_bullet()
+        R, t, v, w = self.robot_sim.get_link_pose_vel("end_effector_link")
         self.initial_position = t
         self.initial_rotation = R
 
-        # add debug parameters to the pybullet gui
-        dxc = p.addUserDebugParameter("dx", -1.0, 1.0, 0.0)
-        dyc = p.addUserDebugParameter("dy", -1.0, 1.0, 0.0)
-        dzc = p.addUserDebugParameter("dz", -1.0, 1.0, 0.0)
-        drollc = p.addUserDebugParameter("droll", -180.0, 180.0, 0.0)
-        dpitchc = p.addUserDebugParameter("dpitch", -180.0, 180.0, 0.0)
-        dyawc = p.addUserDebugParameter("dyaw", -180.0, 180.0, 0.0)
+    def run(self):
+        # add debug parameters for ee pose and wrench
+        debug_pose = DebugPose()
+
         traj_gen = TrajectoryGenerator()
         traj_gen.reset()
         user_input = True
@@ -104,21 +80,12 @@ class ManipulatorTest:
         desired_pose_publisher = rospy.Publisher("/desired_ee_pose", PoseStamped, queue_size=10)
         desired_pose = PoseStamped()
 
-        task_target = pin.SE3(self.initial_rotation, self.initial_position)
+        # set the target either from user input or using a circular trajectory
         while True:
-            # set the target either from user input or using a circular trajectory
             if user_input:
-                dx = p.readUserDebugParameter(dxc)
-                dy = p.readUserDebugParameter(dyc)
-                dz = p.readUserDebugParameter(dzc)
-                droll = p.readUserDebugParameter(drollc)
-                dpitch = p.readUserDebugParameter(dpitchc)
-                dyaw = p.readUserDebugParameter(dyawc)
-
-                target_position = self.initial_position + np.array([dx, dy, dz])
-                # add delta rotation in world frame to ee
-                dR = Rotation.from_euler(seq='xyz', angles=[droll, dpitch, dyaw], degrees=True)
-                target_rotation = dR.as_matrix().dot(self.initial_rotation)
+                d_pos, d_rot = debug_pose.get_debug_pose()
+                target_position = self.initial_position + np.array(d_pos)
+                target_rotation = d_rot.dot(self.initial_rotation)
                 task_target = pin.SE3(target_rotation, target_position)
                 self.controller.set_task_target(task_target)
             else:
@@ -143,72 +110,20 @@ class ManipulatorTest:
             desired_pose_publisher.publish(desired_pose)
 
             # compute and apply control action
-            tau = self.controller.advance(self.q, self.v)
-            self.apply_motor_torques(tau)
+            q, v = self.robot_sim.update_state()
+            tau_vec = self.controller.advance(q, v)
+            for idx, tau in enumerate(tau_vec):
+                self.robot_sim.set_command("joint_%d" % (idx+1), JointCommandType.TORQUE, tau)
 
-            self.advance_simulation()
-
-    def advance_simulation(self):
-        p.stepSimulation()
-        self.draw_trajectory()
-        self.wrapper.publish_ros()
-        self.update_state()
-        self.report_time()
-
-    def report_time(self):
-        """ Sleep additional time if loop is faster """
-        # TODO (giuseppe) do some proper reporting
-        t = time.time()
-        dt = t - self.prev_time
-        if dt < self.timestep:
-            time.sleep(dt)
-        self.prev_time = t
-
-    def draw_trajectory(self):
-        """ Plot the trace of the end effector """
-        ls = p.getLinkState(self.robot, self.ee_idx_bullet)  # ls[4] world link frame position
-
-        if self.has_prev_pos:
-            p.addUserDebugLine(self.prev_pose, ls[4], [1, 0, 0], 1)
-        self.prev_pose = ls[4]
-        self.has_prev_pos = True
-
-    def update_state(self):
-        """ Read the joints positions and velocities from bullet simulator """
-        states = p.getJointStates(self.robot, range(1, 8))
-        for idx, state in enumerate(states):
-            self.q[idx] = state[0]
-            self.v[idx] = state[1]
-            self.tau[idx] = state[3]
-
-    def forward_kinematics_bullet(self):
-        """ Compute the forward kinematic relying on bullet """
-        state = p.getLinkState(self.robot, self.ee_idx_bullet, computeForwardKinematics=True,
-                               computeLinkVelocity=True)
-        t = np.array(state[4])
-        R = Rotation.from_quat(state[5])
-        R = R.as_dcm()
-        v = np.array(state[6])
-        w = np.array(state[7])
-        return R, t, v, w
-
-    def disable_motors(self):
-        """
-        Disable the default active motors in each joint and set to zero the default linear and angular
-        damping (both equal to 0.04)
-        :return:
-        """
-        p.setJointMotorControlArray(self.robot, range(1, 8), p.VELOCITY_CONTROL, forces=[0.0]*7)
-        for i in range(0, 7):
-            p.changeDynamics(self.robot, i, linearDamping=0.1, angularDamping=0.1)
-
-    def apply_motor_torques(self, tau):
-        assert len(tau) == 7
-        p.setJointMotorControlArray(self.robot, range(1, 8), p.TORQUE_CONTROL, forces=tau)
+            self.robot_sim.send_commands()
+            self.wrapper.publish_ros()
+            self.step_simulation()
 
 
 if __name__ == "__main__":
     rospy.init_node("control_test")
-    test = ManipulatorTest()
-    test.init_sim()
-    test.sim()
+    test = TestOpSpaceController(time_step=0.005)
+    try:
+        test.run()
+    except rospy.ROSInterruptException:
+        pass

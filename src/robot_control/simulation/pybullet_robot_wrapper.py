@@ -89,7 +89,7 @@ class PybulletRobotWrapper:
 
     def enable_ft_sensor(self, link_name):
         """ this actually enables the ft sensor at the corresponding joint """
-        p.enableJointForceTorqueSensor(self.robot, self.name_to_idx_map(link_name))
+        p.enableJointForceTorqueSensor(self.robot, self.name_to_idx_map[link_name])
 
     def disable_motors(self):
         """

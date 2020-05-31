@@ -60,8 +60,8 @@ class RobotWrapper:
         Set the internal robot state which is the generalized positions and velocities.
         :return:
         """
-        self.q = q
-        self.v = v
+        self.q = np.asarray(q)
+        self.v = np.asarray(v)
         if update_kinematics:
             self.forward_kinematics()
 

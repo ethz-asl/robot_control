@@ -12,6 +12,7 @@ p.setGravity(0, 0, -9.81)
 robot_sim = PybulletRobotWrapper(URDF_PATH, [0.0, 0.0, 0.0], fixed_base=True)
 robot_sim.set_joint_state([0., math.pi/8, 0.0, math.pi/2, 0, math.pi/3, -math.pi/2])
 robot_sim.disable_motors()
+robot_sim.enable_ft_sensor("end_effector_link")
 step_counter = 0
 
 while True:
