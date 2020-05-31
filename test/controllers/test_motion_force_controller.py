@@ -86,10 +86,6 @@ class TestMotionForceController(PyBulletSimulationBase):
         traj_gen.reset()
         user_input = True
 
-        # publisher for the current desired pose
-        desired_pose_publisher = rospy.Publisher("/desired_ee_pose", PoseStamped, queue_size=10)
-        desired_pose = PoseStamped()
-
         # set the target either from user input or using a circular trajectory
         while True:
             if user_input:

@@ -16,7 +16,7 @@
 <!--  </node>-->
 
   <!--  Run the test node-->
-  <node name="robot_wrapper_ros" type="test_task_space_controller_wrapper.py" pkg="robot_control" output="screen"/>
+  <node name="robot_wrapper_ros" type="test_contact_wrench.py" pkg="robot_control" output="screen"/>
 
   <!-- Publish robot state (joints) as TF -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
