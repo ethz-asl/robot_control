@@ -1,4 +1,6 @@
+import numpy as np
 import pybullet as p
+from robot_control.simulation import get_actuated_joints_info
 
 
 class JointCommandType:
@@ -9,6 +11,7 @@ class JointCommandType:
 
 class JointCommand:
     def __init__(self):
+        self.dof = 1
         self.cmd_type = JointCommandType.POSITION
         self.position = 0.0
         self.velocity = 0.0
@@ -28,5 +31,14 @@ class JointCommand:
 
 
 class JointCommandVector:
-    def __init__(self, names):
-        self.commands = {name: JointCommand() for name in names}
+    def __init__(self, obj_id):
+        self.commands = {}
+        joints_info = get_actuated_joints_info(obj_id)
+        for joint in joints_info.values():
+            cmd = JointCommand()
+            cmd.dof = joint.dof
+            if joint.dof != 1:
+                cmd.position = [0.0] * joint.dof
+                cmd.velocity = [0.0] * joint.dof
+                cmd.torque = [0.0] * joint.dof
+            self.commands[joint.name] = cmd

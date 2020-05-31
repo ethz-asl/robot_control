@@ -2,7 +2,7 @@ import numpy as np
 import pybullet as p
 from scipy.spatial.transform import Rotation as Rotation
 
-from robot_control.simulation import get_link_name_idx_map, get_link_idx_name_map
+from robot_control.simulation import get_link_name_idx_map, get_link_idx_name_map, get_actuated_joints_info
 from robot_control.simulation import JointCommandVector, JointCommandType
 from robot_control.simulation import JointReading, JointReadingVector
 
@@ -19,11 +19,13 @@ class PybulletRobotWrapper:
         # init joint structure
         self.name_to_idx_map = get_link_name_idx_map(self.robot)
         self.idx_to_name_map = get_link_idx_name_map(self.robot)
-        self.joint_commands = JointCommandVector(self.name_to_idx_map.keys())
-        self.joint_readings = JointReadingVector(self.name_to_idx_map.keys())
+        self.actuated_joints_info = get_actuated_joints_info(self.robot)
+        self.dof = sum([joint.dof for joint in self.actuated_joints_info.values()])
+
+        self.joint_commands = JointCommandVector(self.robot)
+        self.joint_readings = JointReadingVector(self.robot)
 
         # state
-        self.dof = len(self.name_to_idx_map)
         self.q = [0.0] * self.dof
         self.v = [0.0] * self.dof
 
@@ -31,39 +33,62 @@ class PybulletRobotWrapper:
         self.ft_sensors_enabled = []
 
     def get_readings(self):
-        idxs = self.name_to_idx_map.values()
-        js = p.getJointStates(self.robot, idxs)
-        i = 0
-        for j, idx in zip(js, idxs):
-            name = self.idx_to_name_map[idx]
-            jr = JointReading()
-            jr.position = j[0]
-            jr.velocity = j[1]
-            self.q[i], self.v[i] = j[0], j[1]
-            i += 1
-
-            if name in self.ft_sensors_enabled:
-                jr.reaction_forces = j[2]
-
-            if self.joint_commands.commands[name].cmd_type == JointCommandType.TORQUE:
-                jr.torque = self.joint_commands.commands[name].torque
+        state_idx = 0
+        for joint in self.actuated_joints_info.values():
+            joint_reading = JointReading()
+            if joint.dof == 1:
+                joint_state = p.getJointState(self.robot, joint.idx)
+                joint_reading.position = joint_state[0]
+                joint_reading.velocity = joint_state[1]
+                joint_reading.torque = joint_state[3]
+                self.q[state_idx], self.v[state_idx] = joint_state[0], joint_state[1]
+                state_idx += 1
             else:
-                jr.torque = j[3]
+                joint_state = p.getJointStateMultiDof(self.robot, joint.idx)
+                joint_reading.position = joint_state[0]
+                joint_reading.velocity = joint_state[1]
+                joint_reading.torque = joint_state[3]
+                for q, v in zip(joint_state[0], joint_state[1]):
+                    self.q[state_idx], self.v[state_idx] = q, v
+                    state_idx += 1
 
-    def set_commands(self, joint_commands):
-        self.joint_commands = joint_commands
+            if joint.name in self.ft_sensors_enabled:
+                joint_reading.reaction_forces = joint_state[2]
+
+            if self.joint_commands.commands[joint.name].cmd_type == JointCommandType.TORQUE:
+                joint_reading.torque = self.joint_commands.commands[joint.name].torque
+
+    def set_command(self, joint_name, command_type, value):
+        self.joint_commands.commands[joint_name].set_command_type(command_type)
+        if command_type == JointCommandType.POSITION:
+            self.joint_commands.commands[joint_name].set_position(value)
+        elif command_type == JointCommandType.VELOCITY:
+            self.joint_commands.commands[joint_name].set_velocity(value)
+        elif command_type == JointCommandType.TORQUE:
+            self.joint_commands.commands[joint_name].set_torque(value)
 
     def send_commands(self):
-        for command in self.joint_commands.commands:
-            p.setJointMotorControl2(self.robot,
-                                    self.name_to_idx_map[command.name],
-                                    command.cmd_type,
-                                    targetPosition=command.position,
-                                    targetVelocity=command.velocity,
-                                    force=command.torque)
+        for joint_name, command in self.joint_commands.commands.items():
+            if command.dof == 1:
+                if command.cmd_type != JointCommandType.TORQUE:
+                    torque = 100 # high limit TODO (giuseppe) this should be the actuator limit
+                else:
+                    torque = command.torque
+                p.setJointMotorControl2(self.robot,
+                                        self.actuated_joints_info[joint_name].idx,
+                                        command.cmd_type,
+                                        targetPosition=command.position,
+                                        targetVelocity=command.velocity,
+                                        force=torque)
+            else:
+                p.setJointMotorControlMultiDof(self.robot,
+                                               self.actuated_joints_info[joint_name].idx,
+                                               targetPosition=command.position,
+                                               targetVelocity=command.velocity,
+                                               force=torque)
 
     def enable_ft_sensor(self, link_name):
-        """ this actually enables the ft sensor at the corrsponding joint """
+        """ this actually enables the ft sensor at the corresponding joint """
         p.enableJointForceTorqueSensor(self.robot, self.name_to_idx_map(link_name))
 
     def disable_motors(self):
@@ -72,10 +97,9 @@ class PybulletRobotWrapper:
          damping (both equal to 0.04)
          :return:
         """
-        idxs = self.name_to_idx_map.values()
-        p.setJointMotorControlArray(self.robot, idxs, p.VELOCITY_CONTROL, forces=[0.0] * len(idxs))
-        for idx in idxs:
-            p.changeDynamics(self.robot, idx, linearDamping=0.1, angularDamping=0.1)
+        for joint in self.actuated_joints_info.values():
+            p.setJointMotorControl2(self.robot, joint.idx, p.VELOCITY_CONTROL, force=0.0)
+            p.changeDynamics(self.robot, joint.idx, linearDamping=0.1, angularDamping=0.1)
 
     def update_state(self):
         self.get_readings()
@@ -85,15 +109,15 @@ class PybulletRobotWrapper:
         for i, q in enumerate(q):
             p.resetJointState(self.robot, i + 1, q)
 
-    def get_contact_wrench(self, object_id, link_name_A=-1, link_name_B=-1):
+    def get_contact_wrench(self, object_in_contact, link_name_A=-1, link_name_B=-1):
         link_idx_A = -1
         link_idx_B = -1
         if link_name_A != -1:
             link_idx_A = self.name_to_idx_map[link_name_A]
         if link_name_B != -1:
-            link_idx_B = get_link_name_idx_map(object_id)[link_name_B]
+            link_idx_B = get_link_name_idx_map(object_in_contact)[link_name_B]
 
-        points = p.getContactPoints(self.robot, object_id, link_idx_A, link_idx_B)
+        points = p.getContactPoints(self.robot, object_in_contact, link_idx_A, link_idx_B)
         normal_vector_world = np.zeros(3)
         for point in points:
             normal_force = point[9]
@@ -111,3 +135,9 @@ class PybulletRobotWrapper:
         v = np.array(state[6])
         w = np.array(state[7])
         return R, t, v, w
+
+    def __str__(self):
+        info = "Link: idx = {}\n".format(self.name_to_idx_map)
+        for idx in range(p.getNumJoints(self.robot)):
+            info += "Joint {} : {}\n".format(idx, p.getJointInfo(self.robot, idx))
+        return info

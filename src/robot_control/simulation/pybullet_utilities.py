@@ -2,7 +2,7 @@ import numpy as np
 import pybullet as p
 from scipy.spatial.transform import Rotation as Rotation
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 
 def get_link_name_idx_map(obj_id):
@@ -28,7 +28,25 @@ def get_link_idx_name_map(obj_id):
             link_name_map[idx] = name
     return link_name_map
 
-# TODO (giuseppe) missing something to get the joints mapping
+
+def get_actuated_joints_info(obj_id):
+    """ Return joints info in terms of named tuples """
+    JointInfo = namedtuple('JointInfo', ['name', 'idx', 'joint_type', 'dof'])
+    joints_info = {}
+    for idx in range(p.getNumJoints(obj_id)):
+        info = p.getJointInfo(obj_id, idx)
+        name = info[1].decode('UTF-8')
+        idx = info[0]
+        joint_type = info[2]
+        if joint_type != p.JOINT_FIXED:
+            dof = 1
+            if joint_type == p.JOINT_PLANAR:
+                dof = 2
+            if joint_type == p.JOINT_SPHERICAL:
+                dof = 3
+            joint_info = JointInfo(name=name, idx=idx, joint_type=joint_type, dof=dof)
+            joints_info[name] = joint_info
+    return joints_info
 
 
 class DebugPose:
