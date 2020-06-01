@@ -17,8 +17,6 @@ from robot_control.simulation import DebugPose
 from robot_control.controllers.implementation import OperationalSpaceControllerRos
 from robot_control.controllers.utilities import TrajectoryGenerator
 
-from geometry_msgs.msg import PoseStamped
-
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
 URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
 
