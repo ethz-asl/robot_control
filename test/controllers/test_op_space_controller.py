@@ -1,11 +1,14 @@
 #! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
 
+import rospkg
 import rospy
+import xacro
 from geometry_msgs.msg import WrenchStamped
 import pinocchio as pin
 
-import os
 import math
+import os
+import tempfile
 import numpy as np
 import pybullet as p
 import pybullet_data
@@ -18,8 +21,9 @@ from robot_control.controllers.implementation import OperationalSpaceControllerR
 from robot_control.controllers.utilities import TrajectoryGenerator
 
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
-URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
-
+USE_JOINTS = 7
+URDF_PATH = os.path.join(ASSETS_PATH, 'arms', 'panda', 'panda.urdf')
+EE_LINK = 'panda_hand'
 
 class TestOpSpaceController(PyBulletSimulationBase):
     def __init__(self, time_step):
@@ -27,14 +31,14 @@ class TestOpSpaceController(PyBulletSimulationBase):
 
         # Manipulator simulation object
         self.robot_sim = PybulletRobotWrapper(URDF_PATH, [0.0, 0.0, 0.0], fixed_base=True)
-        self.robot_sim.enable_ft_sensor("end_effector_link")
+        self.robot_sim.enable_ft_sensor(EE_LINK)
         self.robot_sim.disable_motors()
 
         # Manipulator for modeling
         self.wrapper = RobotWrapperRos()
         self.wrapper.init_from_urdf(URDF_PATH)
         self.wrapper.init_joint_structure()
-        self.controller = OperationalSpaceControllerRos(self.wrapper, "end_effector_link")
+        self.controller = OperationalSpaceControllerRos(self.wrapper, EE_LINK)
 
         # Other objects in the scene
         self.table = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "table/table.urdf"),
@@ -62,7 +66,7 @@ class TestOpSpaceController(PyBulletSimulationBase):
         self.controller.advance(q, v)
 
         # Initial position and orientation are used later to compute the target
-        R, t, v, w = self.robot_sim.get_link_pose_vel("end_effector_link")
+        R, t, v, w = self.robot_sim.get_link_pose_vel(EE_LINK)
         self.initial_position = t
         self.initial_rotation = R
 
@@ -93,8 +97,8 @@ class TestOpSpaceController(PyBulletSimulationBase):
             # compute and apply control action
             q, v = self.robot_sim.update_state()
             tau_vec = self.controller.advance(q, v)
-            for idx, tau in enumerate(tau_vec):
-                self.robot_sim.set_command("joint_%d" % (idx+1), JointCommandType.TORQUE, tau)
+            for idx, tau in enumerate(tau_vec[:USE_JOINTS]):
+                self.robot_sim.set_command("panda_joint%d" % (idx+1), JointCommandType.TORQUE, tau)
 
             self.robot_sim.send_commands()
             self.wrapper.publish_ros()
@@ -109,3 +113,4 @@ if __name__ == "__main__":
         test.run()
     except rospy.ROSInterruptException:
         pass
+
