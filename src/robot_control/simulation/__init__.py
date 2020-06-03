@@ -3,4 +3,4 @@ from robot_control.simulation.pybullet_command import JointCommandType, JointCom
 from robot_control.simulation.pybullet_readings import JointReading, JointReadingVector
 from robot_control.simulation.pybullet_robot_wrapper import PybulletRobotWrapper
 
-from robot_control.simulation.pybullet_simulation_base import PyBulletSimulationBase
+from robot_control.simulation.pybullet_simulation_base import PyBulletSimulationBase, PyBulletSimulationMode
