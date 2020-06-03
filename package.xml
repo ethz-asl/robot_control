@@ -5,6 +5,8 @@
   <description>robot_control package</description>
   <maintainer email="grizzi@mavt.ethz.ch">Giuseppe Rizzi</maintainer>
   <license>BSD</license>
+
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>pybind11_catkin</depend>
 </package>
 
