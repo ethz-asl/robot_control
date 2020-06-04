@@ -7,14 +7,6 @@
   <!-- Load robot description -->
   <param name="robot_description" command="$(find xacro)/xacro $(arg description_file)"/>
 
-  <!-- Open joint_state_publisher for smb_description with GUI for debugging -->
-<!--  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" output="screen">-->
-<!--    <param name="rate"              value="100"/>-->
-<!--    <param name="use_gui"           value="true"/>-->
-<!--    <remap from="robot_description" to="robot_description"/>-->
-<!--    <remap from="joint_states"      to="joint_states"/>-->
-<!--  </node>-->
-
   <!--  Run the test node-->
   <node name="robot_wrapper_ros" type="test_motion_force_controller.py" pkg="robot_control" output="screen"/>
 
