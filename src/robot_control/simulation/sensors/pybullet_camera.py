@@ -9,47 +9,36 @@ import numpy as np
 
 class CameraConfig:
     """ Container class for the camera intrinsics """
-    def __init__(self):
-        self.fov = 60           # field of view
-        self.width = 128
-        self.height = 128
-        self.aspect = (1.0 * self.width) / self.height       # aspect ratio
-        self.near_plane = 0.01
-        self.far_plane = 100
-
-    def set_fov(self, fov):
+    def __init__(self, fov=60, width=128, height=128, near_plane=0.01, far_plane=100):
         self.fov = fov
-
-    def set_width(self, width):
         self.width = width
-        self.aspect = (1.0 * self.width) / self.height
-
-    def set_height(self, height):
         self.height = height
-        self.aspect = (1.0 * self.width) / self.height
-
-    def set_near_plane(self, near_plane):
         self.near_plane = near_plane
-
-    def set_far_plane(self, far_plane):
         self.far_plane = far_plane
+
+    @property
+    def aspect_ratio(self):
+        return (1.0 * self.width) / self.height
 
     def get_projection_matrix(self):
         if self.far_plane < self.near_plane:
             raise NameError("The far plane cannot be closer than the near plane")
         return p.computeProjectionMatrixFOV(self.fov,
-                                            self.aspect,
+                                            self.aspect_ratio,
                                             self.near_plane,
                                             self.far_plane)
 
     def __str__(self):
-        info = "Camera config:\n"
-        info += "Field of View (FOV): {}\n".format(self.fov)
-        info += "Width: {}\n".format(self.width)
-        info += "Height: {}\n".format(self.height)
-        info += "Aspect ratio: {}\n".format(self.aspect)
-        info += "Near plane distance: {}\n".format(self.near_plane)
-        info += "Far plane distance: {}".format(self.far_plane)
+        info = """
+Camera config:
+Field of View (FOV): {fov}
+Width: {width}
+Height: {height}
+Aspect ratio: {aspect_ratio}
+Near plane distance: {near_plane}
+Far plane distance: {near_plane}
+""".format(fov=self.fov, width=self.width, height=self.height, aspect_ratio=self.aspect_ratio,
+           near_plane=self.near_plane, far_plane=self.far_plane)
         return info
 
 
@@ -81,6 +70,7 @@ def get_camera_image(camera_config, object_id=None, link_id=None,
     :param position_offset: the position offset wrt to the attached link or world if object id is not provided
     :param orientation_offset: the orientation offset wrt to the attached link or world if object id is not provided
     :param segmentation_mask: set to false if the segmentation mask is not needed.
+    :param renderer: which renderer to use
     :return: the output of the simulation renderer
     """
     assert isinstance(camera_config, CameraConfig)
