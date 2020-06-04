@@ -12,7 +12,7 @@ import pybullet_data
 from robot_control.simulation.sensors import CameraConfig, get_camera_image, depth_buffer_to_depth_image
 from robot_control.simulation import PybulletRobotWrapper, PyBulletSimulationBase, PyBulletSimulationMode
 
-ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
+ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "assets",)
 URDF_PATH = os.path.join(ASSETS_PATH, "composite", "kinova3_gripper", "kinova3_gripper.urdf")
 
 
@@ -34,12 +34,7 @@ class TestDepthImage(PyBulletSimulationBase):
         p.setGravity(0, 0, -9.81)
 
     def run(self):
-        config = CameraConfig()
-        config.set_fov(70)
-        config.set_far_plane(0.4)
-        config.set_near_plane(0.1)
-        config.set_width(256)
-        config.set_height(256)
+        config = CameraConfig(fov=70, width=256, height=256, far_plane=0.4, near_plane=0.1)
         print(config)
 
         test_case = 0
@@ -48,13 +43,13 @@ class TestDepthImage(PyBulletSimulationBase):
             if test_case == 0:
                 # Camera attached to the end effector
                 _, _, _, depth_buffer, _ = get_camera_image(config,
-                                                            self.robot_sim.get_bullet_id(),
-                                                            self.robot_sim.get_link_idx("end_effector_link"),
+                                                            self.robot_sim.robot,
+                                                            self.robot_sim.name_to_idx_map["end_effector_link"],
                                                             position_offset=[0.0, 0.08, 0.02],
                                                             renderer=p.ER_TINY_RENDERER)
             elif test_case == 1:
                 # Camera on top looking down
-                config.set_far_plane(1.1)
+                config.far_plane = 1.1
                 _, _, _, depth_buffer, _ = get_camera_image(config,
                                                             position_offset=[0.0, 0.0, 1.0],
                                                             orientation_offset=[1, 0, 0, 0],
