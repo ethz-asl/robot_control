@@ -1,4 +1,4 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+#! /usr/bin/env python
 
 import rospy
 from geometry_msgs.msg import WrenchStamped
@@ -155,6 +155,7 @@ class TestMotionForceController(PyBulletSimulationBase):
 
 if __name__ == "__main__":
     rospy.init_node("control_test")
+    rospy.loginfo("Testing Motion Force Controller")
     test = TestMotionForceController(time_step=0.005)
     try:
         test.run()
