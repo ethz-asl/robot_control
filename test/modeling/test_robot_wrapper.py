@@ -1,16 +1,15 @@
 import unittest
 import os
 import numpy as np
-from robot_control import RobotWrapper
+from rc import RobotWrapper
 
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
-PANDA_URDF_PATH = os.path.join(ASSETS_PATH, 'arms', 'panda', 'panda.urdf')
+PANDA_URDF_PATH = os.path.abspath(os.path.join(ASSETS_PATH, 'arms', 'panda', 'panda.urdf'))
 
 class RobotWrapperTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.wrapped = RobotWrapper()
-        cls.wrapped.init_from_urdf(PANDA_URDF_PATH)
+        cls.wrapped = RobotWrapper(PANDA_URDF_PATH)
 
     def test_loads(self):
         self.assertEqual(self.wrapped.get_dof(), 9)

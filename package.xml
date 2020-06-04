@@ -8,5 +8,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>pybind11_catkin</depend>
+  <depend>pinocchio</depend>
+  <depend>eigen</depend>
 </package>
 
