@@ -3,7 +3,7 @@ import os
 import numpy as np
 from rc import RobotWrapper
 
-ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
+ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "assets",)
 PANDA_URDF_PATH = os.path.abspath(os.path.join(ASSETS_PATH, 'arms', 'panda', 'panda.urdf'))
 
 class RobotWrapperTestCase(unittest.TestCase):
