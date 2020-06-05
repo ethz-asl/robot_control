@@ -1,32 +1,38 @@
 cmake_minimum_required(VERSION 3.10)
 project(robot_control)
 
-find_package(catkin REQUIRED)
+option(CATKIN_BUILD "Unset if building for python 3 through setup.py." TRUE)
+
 find_package(Eigen3 REQUIRED 3.3)
 find_package(pinocchio REQUIRED)
-catkin_package(LIBRARIES)
+find_package(PythonInterp REQUIRED)
+
+if (CATKIN_BUILD)
+  find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
+  catkin_package(LIBRARIES
+    CATKIN_DEPENDS pybind11_catkin)
+endif()
 
 add_subdirectory(submodules/pybind11)
 
-set(PYTHONLIBS_FOUND TRUE)
-set(PYBIND11_PYTHON_VERSION "${PYTHON_VERSION}")
-set(PYTHON_PREFIX "${PYTHON_ENV}")
-set(PYTHON_INTERPRETER "${PYTHON_ENV}/bin/python")
-set(PYTHON_LIBRARIES "${PYTHON_ENV}/lib")
-set(PYTHON_INCLUDE_DIRS "${PYTHON_ENV}/include")
-set(PYTHON_SITE_PACKAGES "${PYTHON_ENV}/lib/python3.7/site-packages")
-set(PYTHON_MODULE_EXTENSION ".so")
+set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES})
+set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 
-include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} "${PYTHON_INCLUDE_DIRS}/python3.7m" ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+if(CATKIN_BUILD)
+  set(SYSTEM_INCLUDE_DIRECTORIES ${catkin_INCLUDE_DIRS} ${SYSTEM_INCLUDE_DIRECTORIES})
+  set(COMMON_LIBRARIES ${catkin_LIBRARIES} COMMON_LIBRARIES)
+endif()
 
-pybind11_add_module(rc MODULE src/robot_control.cc src/robot_wrapper.cc)
-target_link_libraries(rc PRIVATE ${PINOCCHIO_LIBRARIES} ${catkin_LIBRARIES} ${PYTHON_LIBRARIES})
+include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
-install(DIRECTORY launch config
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-# Massive hack to also add the library to the anaconda environment.
-add_custom_command(TARGET rc POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rc> "${PYTHON_ENV}/lib/python3.7/site-packages/rc.so"
-)
+set(SOURCE_FILES src/robot_control.cc src/robot_wrapper.cc)
+if (CATKIN_BUILD)
+  install(DIRECTORY launch config
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  )
+  pybind_add_module(rc MODULE ${SOURCE_FILES})
+else()
+  pybind11_add_module(rc MODULE ${SOURCE_FILES})
+  target_link_libraries(rc PRIVATE ${COMMON_LIBRARIES})
+endif()
 
