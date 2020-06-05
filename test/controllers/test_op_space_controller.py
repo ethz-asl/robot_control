@@ -1,4 +1,4 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+#! /usr/bin/env python
 
 import rospkg
 import rospy
@@ -19,8 +19,6 @@ from robot_control.simulation import PybulletRobotWrapper, JointCommandType, PyB
 from robot_control.simulation import DebugPose
 from robot_control.controllers.implementation import OperationalSpaceControllerRos
 from robot_control.controllers.utilities import TrajectoryGenerator
-
-from geometry_msgs.msg import PoseStamped
 
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
 USE_JOINTS = 7

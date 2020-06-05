@@ -37,8 +37,12 @@ class build_ext(build_ext_orig):
             self.spawn(['cmake', '--build', '.'] + build_args)
         os.chdir(cwd)
 
+with open("README.md", 'r') as f:
+    long_description = f.read()
+
 setuptools.setup(name='robot_control',
                  version='0.0.1',
+                 long_description=long_description,
                  packages=['robot_control',
                            'robot_control.controllers',
                            'robot_control.controllers.implementation',
@@ -53,4 +57,3 @@ setuptools.setup(name='robot_control',
                  cmdclass={
                      'build_ext': build_ext
                      })
-

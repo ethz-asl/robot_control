@@ -3,6 +3,8 @@
 
 
 import rospy
+import numpy as np
+import pinocchio as pin
 from sensor_msgs.msg import JointState
 
 from robot_control.modeling import RobotWrapper
@@ -16,6 +18,22 @@ class RobotWrapperRos(RobotWrapper):
         self.joint_state = JointState()
         self.joint_state_publisher = rospy.Publisher("/joint_states", JointState, queue_size=100)
         self.initialized = False
+
+    def init_from_param(self, param_name):
+        """
+        Initialize the model and data structures
+        :return:
+        """
+        if not rospy.has_param(param_name):
+            raise NameError("Parameter {} does not exist".format(param_name))
+        xml_string = rospy.get_param(param_name)
+        self.model = pin.buildModelFromUrdf(xml_string)
+        self.data = self.model.createData()
+        self.q = pin.neutral(self.model)
+        self.v = np.array([0.0] * self.model.nv)
+        self.tau = np.array([0.0] * self.model.nv)
+        self.nq = self.model.nq
+        self.nv = self.model.nv
 
     def init_joint_structure(self):
         for joint_name in self.model.names:

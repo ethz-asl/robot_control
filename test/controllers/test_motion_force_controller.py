@@ -1,10 +1,8 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+#! /usr/bin/env python
 
 import rospy
 from geometry_msgs.msg import WrenchStamped
 import pinocchio as pin
-
-import time
 
 import os
 import math
@@ -18,8 +16,6 @@ from robot_control.simulation import PybulletRobotWrapper, JointCommandType, PyB
 from robot_control.simulation import DebugPose, DebugWrench
 from robot_control.controllers.implementation import MotionForceControllerRos
 from robot_control.controllers.utilities import TrajectoryGenerator
-
-from geometry_msgs.msg import PoseStamped
 
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
 URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
@@ -159,6 +155,7 @@ class TestMotionForceController(PyBulletSimulationBase):
 
 if __name__ == "__main__":
     rospy.init_node("control_test")
+    rospy.loginfo("Testing Motion Force Controller")
     test = TestMotionForceController(time_step=0.005)
     try:
         test.run()
