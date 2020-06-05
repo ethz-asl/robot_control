@@ -2,11 +2,6 @@
 
 Install the `pinocchio` library following the [instructions](https://stack-of-tasks.github.io/pinocchio/download.html) from the official documentation.
 
-We offer python bindings for efficient and fast prototyping. To support both python 2 and 3, we use anaconda to provide the python 3 environment. Create a `conda` virtual environment with `conda create -n <name> Python=3.7`. 
-The package has to be built using `catkin build -DPYTHON_ENV=<path-to-conda-env>`. The path to the conda environment would be e.g. `/home/<user>/miniconda3/envs/<env_name>` if using miniconda.
-
-Full disclosure: This will build the c++ library python bindings and copy it to the anaconda environment. Let us know if you can't import the library after building.
-
 #### Installing `pinocchio` bindings (Optional)
 
 Follow the instructions reported [here](https://github.com/conda-forge/pinocchio-feedstock). To install the python scripts for this package in the current conda environment (after conda has been activate) navigate to this directory and enter `pip install .`
