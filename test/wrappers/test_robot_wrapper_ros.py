@@ -1,4 +1,4 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+#! /usr/bin/env python
 
 import os
 import rospy

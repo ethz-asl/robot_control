@@ -1,4 +1,4 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+#!/usr/bin/env python
 
 import rospy
 from geometry_msgs.msg import WrenchStamped
@@ -17,7 +17,7 @@ from robot_control.simulation.sensors import get_contact_wrench_b_on_a
 from robot_control.controllers.implementation import MotionForceControllerRos
 from robot_control.controllers.utilities import TrajectoryGenerator
 
-ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
+ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "assets",)
 URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
 
 
