@@ -1,3 +1,6 @@
+### robot_control 
+[![Build Status](https://jenkins.asl.ethz.ch/buildStatus/icon?job=robot_control)](https://jenkins.asl.ethz.ch/job/robot_control/)
+
 ### Installation
 
 The best way to use `pinocchio` python bindings is using Anaconda. Create a `conda` virtual environment and then install `pinocchio`
