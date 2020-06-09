@@ -96,7 +96,11 @@ pin::Motion RobotWrapper::getFrameVelocity(std::string& frame_name) {
   return pin::getFrameVelocity(model, data, frame_id, pin::ReferenceFrame::LOCAL);
 }
 
-MatrixXd RobotWrapper::getInertia() { return data.M; }
+MatrixXd RobotWrapper::getInertia() {
+  data.M.triangularView<Eigen::StrictlyLower>() =
+  data.M.transpose().template triangularView<Eigen::StrictlyLower>();
+  return data.M;}
+
 VectorXd RobotWrapper::getNonLinearTerms() { return data.nle; }
 
 void RobotWrapper::computeAllTerms() {
