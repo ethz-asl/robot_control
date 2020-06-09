@@ -67,7 +67,7 @@ class TaskSpaceController {
 
     // task space dynamics
     VectorXd error = kp * position_error + kd * velocity_error - dJ * wrapper->v;
-    MatrixXd Jpinv = linear_algebra::pseudoInverseAdaptiveDls(J);
+    MatrixXd Jpinv = linear_algebra::computePInvDLS(J);
     VectorXd y = Jpinv * error;
 
     // null-space control

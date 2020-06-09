@@ -3,16 +3,18 @@
  * @author   Giuseppe Rizzi
  * @date     09.06.2020
  * @version  1.0
- * @brief    description
+ * @brief    linear algebra utilities
  */
 #pragma once
-
 #include <Eigen/Core>
+#include <Eigen/SVD>
+#include <iostream>
+
 using namespace Eigen;
 
 namespace linear_algebra{
 
-MatrixXd pseudoInverseAdaptiveDls(const MatrixXd& A, double max_damping = 0.02, double sigma_min_clamp = 0.06) {
+MatrixXd computePInvDLS(const MatrixXd& A, double max_damping = 0.02, double sigma_min_clamp = 0.06) {
   JacobiSVD<MatrixXd> Asvd(A, ComputeThinU | ComputeThinV);
   const VectorXd& sigma = Asvd.singularValues();
 
@@ -24,7 +26,7 @@ MatrixXd pseudoInverseAdaptiveDls(const MatrixXd& A, double max_damping = 0.02, 
   }
 
   VectorXd sigma_inverse = sigma;
-  for (int k = 0; k < sigma.rows(); ++k) {
+  for (int k = 0; k < Asvd.nonzeroSingularValues(); ++k) {
     sigma_inverse(k) = sigma(k) / (sigma(k) * sigma(k) + damping * damping);
   }
 

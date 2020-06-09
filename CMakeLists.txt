@@ -8,6 +8,7 @@ find_package(pinocchio REQUIRED)
 find_package(PythonInterp REQUIRED)
 
 if (CATKIN_BUILD)
+  message(STATUS "Building with catkin.")
   find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
   catkin_package(LIBRARIES
     CATKIN_DEPENDS pybind11_catkin)
@@ -36,3 +37,14 @@ else()
 endif()
 target_link_libraries(rc PRIVATE ${COMMON_LIBRARIES})
 
+### Testing
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(test_math unittest/math.cpp)
+endif()
+
+if(TARGET test_math)
+  target_link_libraries(
+          test_math
+          ${catkin_LIBRARIES}
+  )
+endif()
