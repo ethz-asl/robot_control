@@ -1,6 +1,7 @@
 #include <pinocchio/spatial/se3.hpp>
 #include <pinocchio/spatial/explog.hpp>
 #include "robot_wrapper.h"
+#include "math/math.h"
 
 using namespace Eigen;
 namespace pin = pinocchio;
@@ -17,8 +18,8 @@ class TaskSpaceController {
 
   TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame) {
     wrapper = wrp;
-    kp = MatrixXd::Identity(6, 6) * 10.0;
-    kd = MatrixXd::Identity(6, 6) * 10.0;
+    kp = MatrixXd::Identity(6, 6) * 0.0;
+    kd = MatrixXd::Identity(6, 6) * 1.0;
     int dof = wrapper->getDof();
     kqd_ns = 0.01 * MatrixXd::Identity(dof, dof);
     kqp_res = 0.01 * MatrixXd::Identity(dof, dof);
@@ -44,7 +45,6 @@ class TaskSpaceController {
     dR = dR.normalized();
     Matrix<double, 6, 1> position_error;
     position_error.head<3>() = current_pose.rotation().transpose() * (desired_pose.translation() - current_pose.translation());
-    std::cout << "w:" << dR.w() << std::endl;
     position_error[3] = 2.0 * dR.w() * dR.x();
     position_error[4] = 2.0 * dR.w() * dR.y();
     position_error[5] = 2.0 * dR.w() * dR.z();
@@ -58,7 +58,6 @@ class TaskSpaceController {
     Matrix<double, 6, 1> current_velocity;
     current_velocity.head<3>() = frame_velocity.linear();
     current_velocity.tail<3>() = frame_velocity.angular();
-
     Matrix<double, 6, 1> velocity_error = desired_velocity - current_velocity;
 
     std::pair<MatrixXd, MatrixXd> jacobians = wrapper->getAllFrameJacobians(controlled_frame);
@@ -66,15 +65,14 @@ class TaskSpaceController {
     auto dJ = jacobians.second;
     wrapper->computeAllTerms();
 
+    // task space dynamics
     VectorXd error = kp * position_error + kd * velocity_error - dJ * wrapper->v;
-    VectorXd y = J.bdcSvd(ComputeThinU | ComputeThinV).solve(error);
-    VectorXd epsilon = -(kqd_ns * wrapper->v) - kqp_res * (wrapper->q - q_rest);
+    MatrixXd Jpinv = linear_algebra::pseudoInverseAdaptiveDls(J);
+    VectorXd y = Jpinv * error;
 
-    Eigen::CompleteOrthogonalDecomposition<MatrixXd> decomp(J.rows(), J.cols());
-    decomp.setThreshold(0.1);
-    decomp.compute(J);
-    MatrixXd JpinvJ = decomp.pseudoInverse() * J;
-    VectorXd tau_null_space = (MatrixXd::Identity(J.cols(), J.cols()) - JpinvJ) * epsilon;
+    // null-space control
+    VectorXd epsilon = -(kqd_ns * wrapper->v) - kqp_res * (wrapper->q - q_rest);
+    VectorXd tau_null_space = linear_algebra::computeNullSpace(J) * epsilon;
 
     return wrapper->getInertia() * y + wrapper->getNonLinearTerms() + tau_null_space;
   }
