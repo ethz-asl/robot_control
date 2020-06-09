@@ -11,17 +11,26 @@ class TaskSpaceController {
   RobotWrapper* wrapper;
   pin::SE3 target;
   bool target_set = false;
+  JacobiSVD<MatrixXd> solver;
+  MatrixXd J;
+  MatrixXd dJ;
+
   public:
   std::string controlled_frame;
-  MatrixXd kp, kd, kqd_ns, kqp_res, q_rest;
+  MatrixXd kp, kd, kv, kqd_ns, kqp_res, q_rest;
 
-  TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame) {
+  TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame),
+      solver(6, wrp->getDof()),
+      J(6, wrp->getDof()),
+      dJ(6, wrp->getDof())
+     {
     wrapper = wrp;
     kp = MatrixXd::Identity(6, 6) * 10.0;
-    kd = MatrixXd::Identity(6, 6) * 10.0;
+    kd = MatrixXd::Identity(6, 6) * 50.0;
+    kv = MatrixXd::Identity(6, 6) * 1.0;
     int dof = wrapper->getDof();
-    kqd_ns = 0.01 * MatrixXd::Identity(dof, dof);
-    kqp_res = 0.01 * MatrixXd::Identity(dof, dof);
+    kqd_ns = 0.1 * MatrixXd::Identity(dof, dof);
+    kqp_res = 0.1 * MatrixXd::Identity(dof, dof);
     q_rest = wrapper->getNeutralConfiguration();
     target = pin::SE3(Matrix<double, 3, 3>::Identity(), Matrix<double, 3, 1>::Zero());
   };
@@ -44,7 +53,6 @@ class TaskSpaceController {
     dR = dR.normalized();
     Matrix<double, 6, 1> position_error;
     position_error.head<3>() = current_pose.rotation().transpose() * (desired_pose.translation() - current_pose.translation());
-    std::cout << "w:" << dR.w() << std::endl;
     position_error[3] = 2.0 * dR.w() * dR.x();
     position_error[4] = 2.0 * dR.w() * dR.y();
     position_error[5] = 2.0 * dR.w() * dR.z();
@@ -61,18 +69,19 @@ class TaskSpaceController {
 
     Matrix<double, 6, 1> velocity_error = desired_velocity - current_velocity;
 
-    std::pair<MatrixXd, MatrixXd> jacobians = wrapper->getAllFrameJacobians(controlled_frame);
-    auto J = jacobians.first;
-    auto dJ = jacobians.second;
+    wrapper->getAllFrameJacobians(controlled_frame, J, dJ);
     wrapper->computeAllTerms();
 
-    VectorXd error = kp * position_error + kd * velocity_error - dJ * wrapper->v;
-    VectorXd y = J.bdcSvd(ComputeThinU | ComputeThinV).solve(error);
+    Eigen::CompleteOrthogonalDecomposition<MatrixXd> decomp(J.rows(), J.cols());
+    decomp.setThreshold(0.06);
+    decomp.compute(J);
+
+    VectorXd error = kp * position_error + kd * velocity_error - kv * (dJ * wrapper->v);
+
+    solver.compute(J, ComputeThinU | ComputeThinV);
+    VectorXd y = solver.solve(error);
     VectorXd epsilon = -(kqd_ns * wrapper->v) - kqp_res * (wrapper->q - q_rest);
 
-    Eigen::CompleteOrthogonalDecomposition<MatrixXd> decomp(J.rows(), J.cols());
-    decomp.setThreshold(0.1);
-    decomp.compute(J);
     MatrixXd JpinvJ = decomp.pseudoInverse() * J;
     VectorXd tau_null_space = (MatrixXd::Identity(J.cols(), J.cols()) - JpinvJ) * epsilon;
 
