@@ -36,9 +36,10 @@ class TestOpSpaceController(PyBulletSimulationBase):
         self.robot_sim.disable_motors()
 
         # Manipulator for modeling
-        # self.wrapper = RobotWrapperRos()
         self.wrapper = rc.RobotWrapper(URDF_PATH)
         self.controller = TaskSpaceController(self.wrapper, "end_effector_link")
+        self.controller.set_kp([1.0] * 6)
+        self.controller.set_kd([1.0] * 6)
 
         # Other objects in the scene
         self.table = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "table/table.urdf"),

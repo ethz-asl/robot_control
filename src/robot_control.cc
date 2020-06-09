@@ -63,7 +63,9 @@ PYBIND11_MODULE(rc, m) {
     .def(py::init<RobotWrapper*, std::string&>())
     .def("set_task_target", &TaskSpaceController::setTaskTarget)
     .def("compute_command", &TaskSpaceController::computeCommand)
-    .def("advance", &TaskSpaceController::advance);
+    .def("advance", &TaskSpaceController::advance)
+    .def("set_kp", &TaskSpaceController::setKp)
+    .def("set_kd", &TaskSpaceController::setKd);
 
 }
 

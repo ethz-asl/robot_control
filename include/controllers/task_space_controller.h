@@ -14,12 +14,12 @@ class TaskSpaceController {
   bool target_set = false;
   public:
   std::string controlled_frame;
-  MatrixXd kp, kd, kqd_ns, kqp_res, q_rest;
+  MatrixXd kp_, kd_, kqd_ns, kqp_res, q_rest;
 
   TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame) {
     wrapper = wrp;
-    kp = MatrixXd::Identity(6, 6) * 0.0;
-    kd = MatrixXd::Identity(6, 6) * 1.0;
+    kp_ = MatrixXd::Identity(6, 6) * 0.0;
+    kd_ = MatrixXd::Identity(6, 6) * 1.0;
     int dof = wrapper->getDof();
     kqd_ns = 0.01 * MatrixXd::Identity(dof, dof);
     kqp_res = 0.01 * MatrixXd::Identity(dof, dof);
@@ -31,6 +31,10 @@ class TaskSpaceController {
     target = task_target;
     target_set = true;
   }
+
+  void setKp(const Matrix<double, 6, 1>& kp){ kp_ = kp.asDiagonal(); }
+
+  void setKd(const Matrix<double, 6, 1>& kd){ kd_ = kd.asDiagonal(); }
 
   VectorXd computeCommand() {
     pin::SE3 desired_pose;
@@ -66,7 +70,7 @@ class TaskSpaceController {
     wrapper->computeAllTerms();
 
     // task space dynamics
-    VectorXd error = kp * position_error + kd * velocity_error - dJ * wrapper->v;
+    VectorXd error = kp_ * position_error + kd_ * velocity_error - dJ * wrapper->v;
     MatrixXd Jpinv = linear_algebra::computePInvDLS(J);
     VectorXd y = Jpinv * error;
 
