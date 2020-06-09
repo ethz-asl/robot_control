@@ -24,7 +24,7 @@ from geometry_msgs.msg import PoseStamped
 
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets")
 URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
-
+MAX_JOINT_FORCE = 25.0
 
 class TestOpSpaceController(PyBulletSimulationBase):
     def __init__(self, time_step):
@@ -85,7 +85,7 @@ class TestOpSpaceController(PyBulletSimulationBase):
             q, v = self.robot_sim.update_state()
             tau_vec = self.controller.advance(q, v)
             for idx, tau in enumerate(tau_vec):
-                self.robot_sim.set_command("joint_%d" % (idx+1), JointCommandType.TORQUE, tau)
+                self.robot_sim.set_command("joint_%d" % (idx+1), JointCommandType.TORQUE, np.clip(tau, -MAX_JOINT_FORCE, MAX_JOINT_FORCE))
 
             self.robot_sim.send_commands()
             self.step_simulation()

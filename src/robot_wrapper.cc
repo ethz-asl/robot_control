@@ -75,15 +75,13 @@ MatrixXd RobotWrapper::getFrameJacobian(std::string& frame_name) {
   return J;
 }
 
-std::pair<MatrixXd, MatrixXd> RobotWrapper::getAllFrameJacobians(std::string& frame_name) {
-  Matrix<double, 6, Dynamic> J(6, model.nv), dJ(6, model.nv);
+void RobotWrapper::getAllFrameJacobians(const std::string& frame_name, Eigen::MatrixXd& J, Eigen::MatrixXd& dJ) {
   auto frame_id = model.getFrameId(frame_name);
   pin::computeJointJacobians(model, data, q);
   pin::computeJointJacobiansTimeVariation(model, data, q, v);
   pin::updateFramePlacements(model, data);
   pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL, J);
   pin::getFrameJacobianTimeVariation(model, data, frame_id, pin::ReferenceFrame::LOCAL, dJ);
-  return std::make_pair(J, dJ);
 }
 
 pin::SE3 RobotWrapper::getFramePlacement(std::string& frame_name) {

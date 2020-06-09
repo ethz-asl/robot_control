@@ -12,17 +12,25 @@ class TaskSpaceController {
   RobotWrapper* wrapper;
   pin::SE3 target;
   bool target_set = false;
+  JacobiSVD<MatrixXd> solver;
+  MatrixXd J;
+  MatrixXd dJ;
+
   public:
   std::string controlled_frame;
   MatrixXd kp_, kd_, kqd_ns, kqp_res, q_rest;
 
-  TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame) {
+  TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame),
+      solver(6, wrp->getDof()),
+      J(6, wrp->getDof()),
+      dJ(6, wrp->getDof())
+     {
     wrapper = wrp;
     kp_ = MatrixXd::Identity(6, 6) * 0.0;
     kd_ = MatrixXd::Identity(6, 6) * 1.0;
     int dof = wrapper->getDof();
-    kqd_ns = 0.01 * MatrixXd::Identity(dof, dof);
-    kqp_res = 0.01 * MatrixXd::Identity(dof, dof);
+    kqd_ns = 0.1 * MatrixXd::Identity(dof, dof);
+    kqp_res = 0.1 * MatrixXd::Identity(dof, dof);
     q_rest = wrapper->getNeutralConfiguration();
     target = pin::SE3(Matrix<double, 3, 3>::Identity(), Matrix<double, 3, 1>::Zero());
   };
@@ -64,9 +72,7 @@ class TaskSpaceController {
     current_velocity.tail<3>() = frame_velocity.angular();
     Matrix<double, 6, 1> velocity_error = desired_velocity - current_velocity;
 
-    std::pair<MatrixXd, MatrixXd> jacobians = wrapper->getAllFrameJacobians(controlled_frame);
-    auto J = jacobians.first;
-    auto dJ = jacobians.second;
+    wrapper->getAllFrameJacobians(controlled_frame, J, dJ);
     wrapper->computeAllTerms();
 
     // task space dynamics
@@ -77,7 +83,6 @@ class TaskSpaceController {
     // null-space control
     VectorXd epsilon = -(kqd_ns * wrapper->v) - kqp_res * (wrapper->q - q_rest);
     VectorXd tau_null_space = linear_algebra::computeNullSpace(J) * epsilon;
-
     return wrapper->getInertia() * y + wrapper->getNonLinearTerms() + tau_null_space;
   }
 
