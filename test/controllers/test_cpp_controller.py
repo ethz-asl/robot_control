@@ -1,4 +1,4 @@
-#! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
+###! /home/giuseppe/Programs/anaconda/envs/pybullet_gym/bin/python
 
 import rospy
 from geometry_msgs.msg import WrenchStamped
@@ -22,7 +22,7 @@ from rc.controllers import TaskSpaceController
 
 from geometry_msgs.msg import PoseStamped
 
-ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets",)
+ASSETS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "assets")
 URDF_PATH = os.path.join(ASSETS_PATH, "arms", "kinova3", "kinova3.urdf")
 
 
@@ -31,7 +31,7 @@ class TestOpSpaceController(PyBulletSimulationBase):
         super(TestOpSpaceController, self).__init__(time_step=time_step)
 
         # Manipulator simulation object
-        self.robot_sim = PybulletRobotWrapper(URDF_PATH, [0.0, 0.0, 0.0], fixed_base=True)
+        self.robot_sim = PybulletRobotWrapper(URDF_PATH, [0.0, 0.0, 0.1], fixed_base=True)
         self.robot_sim.enable_ft_sensor("end_effector_link")
         self.robot_sim.disable_motors()
 
