@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(robot_control)
 
-option(CATKIN_BUILD "Unset if building for python 3 through setup.py." TRUE)
+option(CATKIN_BUILD "Unset if building for python 3 through setup.py." ON)
 
 find_package(Eigen3 REQUIRED 3.3)
 find_package(pinocchio REQUIRED)
