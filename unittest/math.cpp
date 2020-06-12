@@ -22,7 +22,8 @@ TEST(LinearAlgebra, ComputeAdaptiveDampedPseudoInverse){
   // one zero singular value
   VectorXd v = VectorXd::Ones(4); v(3) = 0;
   MatrixXd M = v.asDiagonal();
-  MatrixXd Mpinv = computePInvDLS(M, 0.2, 0.4);
+  JacobiSVD<MatrixXd> solver(M.rows(), M.cols());
+  MatrixXd Mpinv = computePInvDLS(solver, M, 0.2, 0.4);
   JacobiSVD<MatrixXd> Mpinv_svd(Mpinv, ComputeThinU | ComputeThinV);
   const VectorXd& sigma = Mpinv_svd.singularValues();
   double sigma_max = sigma.head<1>()(0);

@@ -14,11 +14,11 @@ using namespace Eigen;
 
 namespace linear_algebra{
 
-MatrixXd computePInvDLS(const MatrixXd& A, double max_damping = 0.02, double sigma_min_clamp = 0.06) {
-  JacobiSVD<MatrixXd> Asvd(A, ComputeThinU | ComputeThinV);
-  const VectorXd& sigma = Asvd.singularValues();
+MatrixXd computePInvDLS(JacobiSVD<MatrixXd> &svd_solver, const MatrixXd& A, double max_damping = 0.02, double sigma_min_clamp = 0.06) {
+  svd_solver.compute(A, ComputeThinU | ComputeThinV);
+  const VectorXd& sigma = svd_solver.singularValues();
 
-  const double sigma_min = sigma(Asvd.nonzeroSingularValues() - 1);
+  const double sigma_min = sigma(svd_solver.nonzeroSingularValues() - 1);
 
   double damping = 0.0;
   if (sigma_min < sigma_min_clamp) {
@@ -26,11 +26,16 @@ MatrixXd computePInvDLS(const MatrixXd& A, double max_damping = 0.02, double sig
   }
 
   VectorXd sigma_inverse = sigma;
-  for (int k = 0; k < Asvd.nonzeroSingularValues(); ++k) {
+  for (int k = 0; k < svd_solver.nonzeroSingularValues(); ++k) {
     sigma_inverse(k) = sigma(k) / (sigma(k) * sigma(k) + damping * damping);
   }
 
-  return Asvd.matrixV() * sigma_inverse.asDiagonal() * Asvd.matrixU().transpose();
+  return svd_solver.matrixV() * sigma_inverse.asDiagonal() * svd_solver.matrixU().transpose();
+}
+
+MatrixXd computePInvDLS(const MatrixXd& A, double max_damping = 0.02, double sigma_min_clamp = 0.06) {
+  JacobiSVD<MatrixXd> solver(A.rows(), A.cols());
+  return computePInvDLS(solver, A, max_damping, sigma_min_clamp);
 }
 
 MatrixXd adaptSingularValues(const Ref<const MatrixXd>& A, double sigma_min) {
