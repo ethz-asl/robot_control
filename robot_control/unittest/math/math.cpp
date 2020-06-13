@@ -6,7 +6,7 @@
  * @brief    description
  */
 
-#include "math/math.h"
+#include "robot_control/math/math.h"
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
