@@ -1,4 +1,6 @@
 .idea/*
+*.pyc
 __pycache__/
 *.egg-info
+src/rc.*.so
 

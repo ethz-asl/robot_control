@@ -111,7 +111,7 @@ class RobotWrapper:
         :param ref: the reference frame, an instance type pinocchio.ReferenceFrame.
         :return: the joint jacobian of type numpy.array().
         """
-        joint_id = self.model.getJointId(name) if self.model.existJointName(self.model, name) else None
+        joint_id = self.model.getJointId(name) if self.model.existJointName(name) else None
         if joint_id:
             self.forward_kinematics()
             return pin.getJointJacobian(self.model, self.data, joint_id, ref)

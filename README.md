@@ -3,32 +3,16 @@
 
 ### Installation
 
-The best way to use `pinocchio` python bindings is using Anaconda. Create a `conda` virtual environment and then install `pinocchio`
-using the instructions reported [here](https://github.com/conda-forge/pinocchio-feedstock). To install this package in the current
-conda environment (after conda has been activate) navigate to this directory and enter `pip install .`
+Install the `pinocchio` library following the [instructions](https://stack-of-tasks.github.io/pinocchio/download.html) from the official documentation.
 
-The current python-based version of the package requires installation of Anaconda and creation of a separate environment containing
-all the necessary dependencies. 
-1. Install _Anaconda_
-    - Install _Anaconda_ for Python 3.x as explained [here](https://docs.anaconda.com/anaconda/install/linux/). 
-The installer prompts `“Do you wish the installer to initialize Anaconda3 by running conda init?”` Select “no” to avoid conda
-to be used as the default python interpreter.
-    - Export the path to the conda binaries. Add the following line to your `.bashrc`: `PATH="$PATH:<path-to-conda-bin-folder>"`.
-If, for instance, conda is installed in `/home/user/Programs/anaconda` this is generally `/home/user/Programs/anaconda`
-2. Create a new _virtual environmet_ 
-    - Make sure the `PYTHONPATH` is updated with ROS packages: `source /opt/ros/melodic/setup.bash`
-    - `conda config --add channels conda-forge`
-    - `conda create -n robot_control python=3.6 pinocchio`
-    - `conda activate robot_control`
-3. Install `robot_control`
-    - cd into the current directory and type `pip install .` This will also install additional dependencies.
-4. Build the ROS package
-    - `catkin build robot_control`
+#### Installing `pinocchio` bindings (Optional)
+
+Follow the instructions reported [here](https://github.com/conda-forge/pinocchio-feedstock). To install the python scripts for this package in the current conda environment (after conda has been activate) navigate to this directory and enter `pip install .`
 
 ### Examples
 
-This will launch a task space controller for the end effector launch both RViz and the OpenGL bullet gui.
-`roslaunch robot_control test_controller.launch`
+Although `pybullet` is not a necessary dependency, it has been used for testing. An example is available [here](test/controllers/test_op_space_controller.py)
+where a robotic arm is controller and results are checked in a pybullet simulation.
 
 ### TODO 
 
