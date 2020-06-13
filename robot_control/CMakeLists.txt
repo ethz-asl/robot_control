@@ -10,7 +10,7 @@ find_package(PythonInterp REQUIRED)
 if (CATKIN_BUILD)
   message(STATUS "Building with catkin.")
   find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
-  catkin_package(LIBRARIES
+  catkin_package(LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS pybind11_catkin)
 endif()
 
@@ -26,16 +26,22 @@ endif()
 
 include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
-set(SOURCE_FILES src/robot_control.cc src/robot_wrapper.cc)
+add_library(${PROJECT_NAME}
+  src/modeling/robot_wrapper.cc
+  src/controllers/end_effector_controllers/task_space_controller.cc)
+target_link_libraries(${PROJECT_NAME}  ${PINOCCHIO_LIBRARIES} ${catkin_LIBRAIRES})
+
+set(SOURCE_BINDINGS_FILES bindings/robot_control.cc)
 if (CATKIN_BUILD)
-  install(DIRECTORY launch config
+  install(DIRECTORY scripts
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   )
-  pybind_add_module(rc MODULE ${SOURCE_FILES})
+  pybind_add_module(rc MODULE ${SOURCE_BINDINGS_FILES})
 else()
-  pybind11_add_module(rc MODULE ${SOURCE_FILES})
+  pybind11_add_module(rc MODULE ${SOURCE_BIDINGS_FILES})
 endif()
-target_link_libraries(rc PRIVATE ${COMMON_LIBRARIES})
+target_link_libraries(rc PRIVATE ${PROJECT_NAME} ${COMMON_LIBRARIES})
+add_dependencies(rc ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
 ### Testing
 if (CATKIN_ENABLE_TESTING)

@@ -1,5 +1,5 @@
-#ifndef H_ROBOT_WRAPPER
-#define H_ROBOT_WRAPPER
+#pragma once
+#include <pinocchio/fwd.hpp>
 #include <string>
 #include <iostream>
 #include <Eigen/Dense>
@@ -49,4 +49,3 @@ class RobotWrapper {
 };
 }
 
-#endif

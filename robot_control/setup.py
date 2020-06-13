@@ -6,14 +6,14 @@ from setuptools.command.build_ext import build_ext as build_ext_orig
 
 class CMakeExtension(Extension):
     def __init__(self, name):
-        super(CMakeExtension).__init__(name, sources=[])
+        super().__init__(name, sources=[])
 
 
 class build_ext(build_ext_orig):
     def run(self):
         for ext in self.extensions:
             self.build_cmake(ext)
-        super(build_ext).run()
+        super().run()
 
     def build_cmake(self, ext):
         output_dir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
@@ -40,12 +40,12 @@ class build_ext(build_ext_orig):
         os.chdir(cwd)
 
 
-with open("../README.md", 'r') as f:
-    long_description = f.read()
+# with open("../README.md", 'r') as f:
+#     long_description = f.read()
 
 setuptools.setup(name='robot_control',
                  version='0.0.1',
-                 long_description=long_description,
+                 #long_description=long_description,
                  python_requires='>=3.6',
                  ext_modules=[CMakeExtension('rc')],
                  cmdclass={
