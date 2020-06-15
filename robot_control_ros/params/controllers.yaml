@@ -1,0 +1,9 @@
+# Publish all joint states -----------------------------------
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+
+task_space_controller:
+  type: robot_control_ros/TaskSpaceController
+  controlled_frame:
+  is_real_robot: false

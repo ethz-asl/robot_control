@@ -7,6 +7,7 @@ find_package(pinocchio REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
   robot_control
+  robot_control_assets
   controller_interface
   franka_hw
   hardware_interface

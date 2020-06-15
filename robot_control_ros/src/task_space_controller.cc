@@ -12,7 +12,7 @@
 
 namespace rc_ros {
 
-bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle) {
+bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) {
   bool is_real_robot;
   std::string robot_description;
   std::string controlled_frame;
@@ -20,11 +20,11 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
     ROS_ERROR_STREAM("Can't read robot description.");
     return false;
   }
-  if (!node_handle.getParam("controllled_frame", controlled_frame)) {
+  if (!ctrl_handle.getParam("controllled_frame", controlled_frame)) {
     ROS_ERROR_STREAM("Set the controller_frame parameter.");
     return false;
   }
-  if (!node_handle.getParam("is_real_robot", is_real_robot_)) {
+  if (!ctrl_handle.getParam("is_real_robot", is_real_robot_)) {
     ROS_ERROR_STREAM("Set the is_real_robot parameter.");
     return false;
   }
@@ -52,8 +52,7 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
       ROS_ERROR_STREAM("Can't get the joint state interface");
       return false;
     }
-    std::vector<std::string> joint_names = state_interface->getNames();
-    for (auto & joint_name : joint_names){
+    for (auto & joint_name : joint_names_){
       state_handles_sim_.push_back(state_interface->getHandle(joint_name));
     }
   }
@@ -111,7 +110,7 @@ Eigen::VectorXd TaskSpaceController::getJointVelocities() const {
   }
   else{
     Eigen::VectorXd joint_velocities = Eigen::VectorXd::Zero(9);
-    for(size_t i=0; i< robot_wrapper->getDof(); i++){
+    for(size_t i=0; i < 7; i++){
       joint_velocities(i) = state_handles_sim_[i].getVelocity();
     }
     return joint_velocities;
@@ -128,7 +127,7 @@ Eigen::VectorXd TaskSpaceController::getJointPositions() const {
   }
   else{
     Eigen::VectorXd joint_positions = Eigen::VectorXd::Zero(9);
-    for(size_t i=0; i< robot_wrapper->getDof(); i++){
+    for(size_t i=0; i< 7; i++){
       joint_positions(i) = state_handles_sim_[i].getVelocity();
     }
     return joint_positions;
