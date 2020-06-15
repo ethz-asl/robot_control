@@ -13,6 +13,7 @@
 namespace rc_ros {
 
 bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle) {
+  bool is_real_robot;
   std::string robot_description;
   std::string controlled_frame;
   if (!node_handle.getParam("/robot_description", robot_description)) {
@@ -23,20 +24,38 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
     ROS_ERROR_STREAM("Set the controller_frame parameter.");
     return false;
   }
+  if (!node_handle.getParam("is_real_robot", is_real_robot_)) {
+    ROS_ERROR_STREAM("Set the is_real_robot parameter.");
+    return false;
+  }
+
   robot_wrapper = new rc::RobotWrapper(robot_description);
   controller = new rc::TaskSpaceController(robot_wrapper, controlled_frame);
 
-  auto* state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
-  if (state_interface == nullptr) {
-    ROS_ERROR_STREAM("Can't get franka state interface");
-    return false;
+  if (is_real_robot_){
+    auto* state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
+    if (state_interface == nullptr) {
+      ROS_ERROR_STREAM("Can't get franka state interface");
+      return false;
+    }
+    try {
+      state_handle_ = std::make_unique<franka_hw::FrankaStateHandle>(
+          state_interface->getHandle("panda_robot"));
+    } catch (hardware_interface::HardwareInterfaceException& ex) {
+      ROS_ERROR_STREAM("Excepion getting franka state handle: " << ex.what());
+      return false;
+    }
   }
-  try {
-    state_handle_ = std::make_unique<franka_hw::FrankaStateHandle>(
-        state_interface->getHandle("panda_robot"));
-  } catch (hardware_interface::HardwareInterfaceException& ex) {
-    ROS_ERROR_STREAM("Excepion getting franka state handle: " << ex.what());
-    return false;
+  else{
+    auto state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
+    if (state_interface == nullptr){
+      ROS_ERROR_STREAM("Can't get the joint state interface");
+      return false;
+    }
+    std::vector<std::string> joint_names = state_interface->getNames();
+    for (auto & joint_name : joint_names){
+      state_handles_sim_.push_back(state_interface->getHandle(joint_name));
+    }
   }
 
   auto* effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
@@ -46,7 +65,7 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
   }
   for (size_t i = 0; i < 7; ++i) {
     try {
-      joint_handles_.push_back(effort_joint_interface->getHandle(joint_names[i]));
+      joint_handles_.push_back(effort_joint_interface->getHandle(joint_names_[i]));
     } catch (const hardware_interface::HardwareInterfaceException& ex) {
       ROS_ERROR_STREAM("Exception getting joint handles: " << ex.what());
       return false;
@@ -55,21 +74,64 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
 }
 
 void TaskSpaceController::starting(const ros::Time& time) {
-	franka::RobotState initial_state = state_handle_->getRobotState();
-  Eigen::Affine3d initial_transform(Eigen::Matrix4d::Map(initial_state.O_T_EE.data()));
+  pin::SE3 target;
+  if (is_real_robot_){
+    Eigen::Affine3d initial_transform;
+    franka::RobotState initial_state = state_handle_->getRobotState();
+    initial_transform = Eigen::Affine3d(Eigen::Matrix4d::Map(initial_state.O_T_EE.data()));
+    target = pin::SE3(initial_transform.rotation(), initial_transform.translation());
 
+  }
+  else{
+    Eigen::VectorXd initial_q = getJointPositions();
+    Eigen::VectorXd initial_v = getJointVelocities();
+    robot_wrapper->updateState(initial_q, initial_v);
+    target = robot_wrapper->getFramePlacement(joint_names_[END_EFFECTOR_INDEX]);
+  }
   // Set the current position to be the target position.
-  pin::SE3 target(initial_transform.rotation(), initial_transform.translation());
   controller->setTaskTarget(target);
 }
 
 void TaskSpaceController::update(const ros::Time& time, const ros::Duration& period) {
-  franka::RobotState state = state_handle_->getRobotState();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> joint_angles(Eigen::Matrix<double, 7, 1>::Map(state.q.data()));
-  Eigen::Matrix<double, Eigen::Dynamic, 1> joint_velocities(Eigen::Matrix<double, 7, 1>::Map(state.dq.data()));
-  Eigen::VectorXd command = controller->advance(joint_angles, joint_velocities);
+  Eigen::VectorXd joint_positions = getJointPositions();
+  Eigen::VectorXd joint_velocities = getJointVelocities();
+  Eigen::VectorXd command = controller->advance(joint_positions, joint_velocities);
   for (int i=0; i < 7; i++) {
     joint_handles_[i].setCommand(command[i]);
+  }
+}
+
+Eigen::VectorXd TaskSpaceController::getJointVelocities() const {
+  if (is_real_robot_){
+    // gripper adds 2 joints but franka state reports only the arm
+    franka::RobotState state = state_handle_->getRobotState();
+    Eigen::VectorXd joint_velocities = Eigen::VectorXd::Zero(9);
+    joint_velocities.head<7>() = Eigen::Matrix<double, 7, 1>::Map(state.dq.data());
+    return joint_velocities;
+  }
+  else{
+    Eigen::VectorXd joint_velocities = Eigen::VectorXd::Zero(9);
+    for(size_t i=0; i< robot_wrapper->getDof(); i++){
+      joint_velocities(i) = state_handles_sim_[i].getVelocity();
+    }
+    return joint_velocities;
+  }
+}
+
+Eigen::VectorXd TaskSpaceController::getJointPositions() const {
+  if (is_real_robot_){
+    // gripper adds 2 joints but franka state reports only the arm
+    franka::RobotState state = state_handle_->getRobotState();
+    Eigen::VectorXd joint_positions = Eigen::VectorXd::Zero(9);
+    joint_positions.head<7>() = Eigen::Matrix<double, 7, 1>::Map(state.q.data());
+    return joint_positions;
+  }
+  else{
+    Eigen::VectorXd joint_positions = Eigen::VectorXd::Zero(9);
+    for(size_t i=0; i< robot_wrapper->getDof(); i++){
+      joint_positions(i) = state_handles_sim_[i].getVelocity();
+    }
+    return joint_positions;
   }
 }
 
