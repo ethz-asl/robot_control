@@ -6,6 +6,7 @@
  * @brief    linear algebra utilities
  */
 #pragma once
+
 #include <Eigen/Core>
 #include <Eigen/SVD>
 #include <iostream>

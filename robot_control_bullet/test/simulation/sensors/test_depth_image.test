@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="test_depth_image" pkg="robot_control_bullet" type="test_depth_image.py" />
+</launch>

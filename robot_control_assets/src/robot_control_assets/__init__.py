@@ -1,0 +1,1 @@
+from robot_control_assets.assets import RobotControlAssets
