@@ -8,16 +8,16 @@ find_package(pinocchio REQUIRED)
 find_package(PythonInterp REQUIRED)
 
 if (CATKIN_BUILD)
-  message(STATUS "Building with catkin.")
   find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
   catkin_package(LIBRARIES
+    INCLUDE_DIRS include
     CATKIN_DEPENDS pybind11_catkin)
 endif()
 
 add_subdirectory(submodules/pybind11)
 
-set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES})
-set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES} ${BOOST_LIBRARIES})
+set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS})
 
 if(CATKIN_BUILD)
   set(SYSTEM_INCLUDE_DIRECTORIES ${catkin_INCLUDE_DIRS} ${SYSTEM_INCLUDE_DIRECTORIES})
@@ -48,3 +48,4 @@ if(TARGET test_math)
           ${catkin_LIBRARIES}
   )
 endif()
+

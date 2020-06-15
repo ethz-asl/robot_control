@@ -4,8 +4,8 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 #include "pinocchio/spatial/se3.hpp"
-#include "robot_wrapper.h"
-#include "controllers/task_space_controller.h"
+#include "robot_control/robot_wrapper.h"
+#include "robot_control/controllers/task_space_controller.h"
 
 namespace pin = pinocchio;
 namespace py = pybind11;

@@ -1,7 +1,7 @@
 #include <pinocchio/spatial/se3.hpp>
 #include <pinocchio/spatial/explog.hpp>
-#include "robot_wrapper.h"
-#include "math/math.h"
+#include "robot_control/robot_wrapper.h"
+#include "robot_control/math/math.h"
 
 using namespace Eigen;
 namespace pin = pinocchio;
@@ -23,11 +23,10 @@ class TaskSpaceController {
   TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame),
       solver(6, wrp->getDof()),
       J(6, wrp->getDof()),
-      dJ(6, wrp->getDof())
-     {
+      dJ(6, wrp->getDof()) {
     wrapper = wrp;
-    kp_ = MatrixXd::Identity(6, 6) * 0.0;
-    kd_ = MatrixXd::Identity(6, 6) * 1.0;
+    kp_ = MatrixXd::Identity(6, 6) * 10.0;
+    kd_ = MatrixXd::Identity(6, 6) * 10.0;
     int dof = wrapper->getDof();
     kqd_ns = 0.1 * MatrixXd::Identity(dof, dof);
     kqp_res = 0.1 * MatrixXd::Identity(dof, dof);
@@ -86,10 +85,10 @@ class TaskSpaceController {
     return wrapper->getInertia() * y + wrapper->getNonLinearTerms() + tau_null_space;
   }
 
-  VectorXd advance(VectorXd& q, VectorXd v) {
+  VectorXd advance(VectorXd& q, VectorXd& v) {
     wrapper->updateState(q, v, true);
     return computeCommand();
   }
-
 };
 }
+

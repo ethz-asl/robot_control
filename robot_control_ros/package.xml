@@ -9,5 +9,16 @@
   <buildtool_depend>catkin</buildtool_depend>
   <depend>robot_control</depend>
   <depend>eigen</depend>
+  <depend>franka_hw</depend>
+  <depend>libfranka</depend>
+  <depend>controller_interfrace</depend>
+  <depend>roscpp</depend>
+  <depend>pinocchio</depend>
+
+  <exec_depend>franka_control</exec_depend>
+
+  <export>
+    <controller_interface plugin="${prefix}/plugin.xml"/>
+  </export>
 </package>
 
