@@ -9,7 +9,9 @@ find_package(PythonInterp REQUIRED)
 
 if (CATKIN_BUILD)
   find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
-  catkin_package(LIBRARIES ${PROJECT_NAME}
+  catkin_package(
+    LIBRARIES ${PROJECT_NAME}
+    INCLUDE_DIRS include
     CATKIN_DEPENDS pybind11_catkin)
 endif()
 
@@ -54,3 +56,14 @@ if(TARGET test_math)
   )
 endif()
 
+### Install
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
+install(TARGETS ${PROJECT_NAME}
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
