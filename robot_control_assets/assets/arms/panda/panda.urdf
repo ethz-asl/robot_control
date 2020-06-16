@@ -4,26 +4,65 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="panda" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:property name="joint_damping" value="1.0"/>
+
   <link name="world"/>
   <joint name="panda_joint_world" type="fixed">
     <parent link="world"/>
     <child link="panda_link0"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <gazebo>
     <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control">
       <robotNamespace>/</robotNamespace>
     </plugin>
   </gazebo>
-  <gazebo reference="panda_link0"/>
-  <gazebo reference="panda_link1"/>
-  <gazebo reference="panda_link2"/>
-  <gazebo reference="panda_link3"/>
-  <gazebo reference="panda_link4"/>
-  <gazebo reference="panda_link5"/>
-  <gazebo reference="panda_link6"/>
-  <gazebo reference="panda_link7"/>
-  <gazebo reference="panda_link8"/>
+  <gazebo reference="panda_link0">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link1">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link2">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link3">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link4">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link5">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link6">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link7">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_link8">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
   <transmission name="panda_joint1_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="panda_joint1">
@@ -138,6 +177,7 @@
     <child link="panda_link1"/>
     <axis xyz="0 0 1"/>
     <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link2">
     <inertial>
@@ -168,6 +208,7 @@
     <child link="panda_link2"/>
     <axis xyz="0 0 1"/>
     <limit effort="87" lower="-1.7628" upper="1.7628" velocity="2.1750"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link3">
     <inertial>
@@ -198,6 +239,7 @@
     <child link="panda_link3"/>
     <axis xyz="0 0 1"/>
     <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link4">
     <inertial>
@@ -230,6 +272,7 @@
     <axis xyz="0 0 1"/>
     <limit effort="87" lower="-3.0718" upper="0.0698" velocity="2.1750"/>
     <!-- upper should be -0.0698, but that brakes simulation when initial position for this joint is 0.0 -->
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link5">
     <inertial>
@@ -260,6 +303,7 @@
     <child link="panda_link5"/>
     <axis xyz="0 0 1"/>
     <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link6">
     <inertial>
@@ -290,6 +334,7 @@
     <child link="panda_link6"/>
     <axis xyz="0 0 1"/>
     <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link7">
     <inertial>
@@ -320,6 +365,7 @@
     <child link="panda_link7"/>
     <axis xyz="0 0 1"/>
     <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100"/>
+    <dynamics damping="${joint_damping}" />
   </joint>
   <link name="panda_link8">
     <inertial>
@@ -339,9 +385,22 @@
     <child link="panda_hand"/>
     <origin rpy="0 0 -0.785398163397" xyz="0 0 0"/>
   </joint>
-  <gazebo reference="panda_hand"/>
-  <gazebo reference="panda_leftfinger"/>
-  <gazebo reference="panda_rightfinger"/>
+
+  <gazebo reference="panda_hand">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_leftfinger">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+  <gazebo reference="panda_rightfinger">
+    <material>Gazebo/White</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
   <transmission name="panda_finger_joint1_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="panda_finger_joint1">
