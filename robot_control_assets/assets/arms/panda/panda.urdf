@@ -135,7 +135,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link0.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link0.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -144,7 +144,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link0.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link0.stl"/>
       </geometry>
     </collision>
   </link>
@@ -157,7 +157,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link1.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link1.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -166,7 +166,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link1.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link1.stl"/>
       </geometry>
     </collision>
   </link>
@@ -188,7 +188,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link2.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link2.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -197,7 +197,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link2.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link2.stl"/>
       </geometry>
     </collision>
   </link>
@@ -219,7 +219,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link3.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link3.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -228,7 +228,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link3.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link3.stl"/>
       </geometry>
     </collision>
   </link>
@@ -250,7 +250,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link4.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link4.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -259,7 +259,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link4.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link4.stl"/>
       </geometry>
     </collision>
   </link>
@@ -283,7 +283,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link5.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link5.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -292,7 +292,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link5.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link5.stl"/>
       </geometry>
     </collision>
   </link>
@@ -314,7 +314,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link6.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link6.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -323,7 +323,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link6.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link6.stl"/>
       </geometry>
     </collision>
   </link>
@@ -345,7 +345,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/link7.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/link7.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -354,7 +354,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/link7.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/link7.stl"/>
       </geometry>
     </collision>
   </link>
@@ -428,7 +428,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/hand.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/hand.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -437,7 +437,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        urdf   <mesh filename="model://assets/arms/panda/meshes/collision/hand.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/hand.stl"/>
       </geometry>
     </collision>
   </link>
@@ -450,7 +450,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/finger.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/finger.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -459,7 +459,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/finger.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/finger.stl"/>
       </geometry>
     </collision>
   </link>
@@ -472,7 +472,7 @@
     <visual>
       <origin rpy="0 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/visual/finger.dae"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/visual/finger.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -481,7 +481,7 @@
     <collision>
       <origin rpy="0 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://assets/arms/panda/meshes/collision/finger.stl"/>
+        <mesh filename="package://robot_control_assets/assets/arms/panda/meshes/collision/finger.stl"/>
       </geometry>
     </collision>
   </link>
