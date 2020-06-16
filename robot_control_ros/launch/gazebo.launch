@@ -32,10 +32,14 @@
   
   <!-- GUI ARGUMENTS -->
   <!-- Enable/disable Gazebo GUI -->
-  <arg name="run_gui"                               default="false"/>
-  
+  <arg name="run_gui"                               default="true"/>
+
   <!-- Path of robot description -->
   <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/panda/panda.urdf"/>
+
+  <!-- Load robot description for gazebo -->
+  <param name="robot_description" command="$(find xacro)/xacro $(arg description_file)"/>
+  <param name="gazebo_ros_control" type="yaml" textfile="$(find robot_control_ros)/config/gazebo_ros_control.yml" />
 
   <!-- Load Gazebo world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -49,13 +53,12 @@
     <arg name="verbose"           value="$(arg verbose)"/>
   </include>
 
-  <!-- Load robot description for gazebo -->
-  <param name="/robot_description" command="$(find xacro)/xacro
-    $(arg description_file)"/>
-
   <!-- Spawn robot in Gazebo -->
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"
-    args="-param /robot_description -urdf -model panda -x $(arg x)
-      -y $(arg y) -z $(arg z) -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"
+    args="-param /robot_description -urdf -model panda"
     output="screen"/>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+
 </launch>
+
