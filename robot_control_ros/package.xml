@@ -21,6 +21,6 @@
   <exec_depend>franka_control</exec_depend>
 
   <export>
-    <controller_interface plugin="${prefix}/plugin.xml"/>
+    <controller_interface plugin="${prefix}/plugins.xml"/>
   </export>
 </package>

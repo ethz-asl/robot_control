@@ -6,4 +6,13 @@
 			Keeps the end effector in the current position.
     </description>
   </class>
+
+    <class name="robot_control_ros/TaskSpaceControllerSim"
+       type="rc_ros::TaskSpaceControllerSim"
+       base_class_type="controller_interface::ControllerBase">
+    <description>
+        Keeps the end effector in the current position.
+    </description>
+  </class>
+
 </library>

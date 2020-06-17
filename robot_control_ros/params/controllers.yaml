@@ -24,4 +24,7 @@ positions_effort_controller:
 task_space_controller:
   type: "robot_control_ros/TaskSpaceController"
   controlled_frame: "end_effector_link"
-  is_real_robot: true
+
+task_space_controller_sim:
+  type: "robot_control_ros/TaskSpaceControllerSim"
+  controlled_frame: "end_effector_link"

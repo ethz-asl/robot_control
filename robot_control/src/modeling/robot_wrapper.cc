@@ -23,6 +23,14 @@ void RobotWrapper::initFromUrdf(std::string& urdf_path) {
   updateState(q0, v0);
 }
 
+void RobotWrapper::initFromXml(std::string& xml_path, bool verbose) {
+  pin::urdf::buildModelFromXML(xml_path, model, verbose);
+  data = pin::Data(model);
+  VectorXd q0 = getNeutralConfiguration();
+  VectorXd v0 = VectorXd::Zero(model.nv);
+  updateState(q0, v0);
+}
+
 // Accessors
 const VectorXd& RobotWrapper::getQ() const { return q; }
 const VectorXd& RobotWrapper::getV() const { return v; }

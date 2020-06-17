@@ -22,6 +22,7 @@ class RobotWrapper {
   RobotWrapper();
 
   void initFromUrdf(std::string& urdf_path);
+  void initFromXml(std::string& xml_file, bool verbose=false);
 
   // Accessors
   const Eigen::VectorXd& getQ() const;

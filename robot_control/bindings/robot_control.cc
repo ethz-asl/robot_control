@@ -41,6 +41,7 @@ PYBIND11_MODULE(rc, m) {
     .def(py::init<std::string&>())
     .def(py::init<>())
     .def("init_from_urdf", &RobotWrapper::initFromUrdf)
+    .def("init_from_xml", &RobotWrapper::initFromXml)
     .def("get_dof", &RobotWrapper::getDof)
     .def("get_neutral_configuration", &RobotWrapper::getNeutralConfiguration)
     .def("get_random_configuration", &RobotWrapper::getRandomConfiguration)
