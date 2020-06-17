@@ -35,7 +35,7 @@
   <arg name="run_gui"                               default="true"/>
 
   <!-- Path of robot description -->
-  <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/panda/panda.urdf"/>
+  <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/panda/panda.urdf.xacro"/>
 
   <!-- Load robot description for gazebo -->
   <param name="robot_description" command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/>
