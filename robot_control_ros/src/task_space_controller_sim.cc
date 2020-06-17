@@ -65,7 +65,7 @@ void TaskSpaceControllerSim::starting(const ros::Time& time) {
   Eigen::VectorXd initial_q = getJointPositions();
   Eigen::VectorXd initial_v = getJointVelocities();
   robot_wrapper->updateState(initial_q, initial_v);
-  target_pose_ = robot_wrapper->getFramePlacement(joint_names_[END_EFFECTOR_INDEX]);
+  target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
   controller->setTaskTarget(target_pose_);
 }
 
@@ -113,13 +113,13 @@ void TaskSpaceControllerSim::publishRos() {
   }
 
   if (pose_publisher_->trylock()){
-    pin::SE3 current_pose = robot_wrapper->getFramePlacement(controlled_frame_);
+    current_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
     pose_publisher_->msg_.header.stamp = ros::Time::now();
     pose_publisher_->msg_.header.frame_id = "world";
-    pose_publisher_->msg_.pose.position.x = current_pose.translation()(0);
-    pose_publisher_->msg_.pose.position.y = current_pose.translation()(1);
+    pose_publisher_->msg_.pose.position.x = current_pose_.translation()(0);
+    pose_publisher_->msg_.pose.position.y = current_pose_.translation()(1);
     pose_publisher_->msg_.pose.position.z = current_pose_.translation()(2);
-    Eigen::Quaterniond q(current_pose.rotation());
+    Eigen::Quaterniond q(current_pose_.rotation());
     pose_publisher_->msg_.pose.orientation.x = q.x();
     pose_publisher_->msg_.pose.orientation.y = q.y();
     pose_publisher_->msg_.pose.orientation.z = q.z();
