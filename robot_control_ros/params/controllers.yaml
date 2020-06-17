@@ -1,9 +1,27 @@
 # Publish all joint states -----------------------------------
 joint_state_controller:
-  type: joint_state_controller/JointStateController
-  publish_rate: 50
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50  
+
+positions_effort_controller:
+  type: effort_controllers/JointGroupPositionController
+  joints: ["panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4", "panda_joint5", "panda_joint6", "panda_joint7"]
+  panda_joint1:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
+  panda_joint2:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
+  panda_joint3:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
+  panda_joint4:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
+  panda_joint5:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
+  panda_joint6:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
+  panda_joint7:
+    pid: {p: 300.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0}
 
 task_space_controller:
-  type: robot_control_ros/TaskSpaceController
-  controlled_frame:
-  is_real_robot: false
+  type: "robot_control_ros/TaskSpaceController"
+  controlled_frame: "end_effector_link"
+  is_real_robot: true

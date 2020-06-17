@@ -3,6 +3,11 @@
 
   <arg name="description_file" default="$(find robot_control_assets)/assets/arms/panda/panda.urdf"/>
 
+  <!-- Gazebo simulation -->
+  <include file="$(find robot_control_ros)/launch/gazebo.launch">
+    <arg name="run_gui" value="false"/>
+  </include>
+
   <!-- Publish robot state (joints) as TF -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
     <param name="publish_frequency" value="100"/>
@@ -14,7 +19,7 @@
   <!--  Controller params-->
   <rosparam file="$(find robot_control_ros)/params/controllers.yaml" command="load"/>
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen" ns="/" args="joint_state_controller"/>
+      output="screen" ns="/" args="joint_state_controller positions_effort_controller"/>
 
   <!-- Controller manager gui -->
   <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>

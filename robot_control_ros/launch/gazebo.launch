@@ -54,11 +54,16 @@
   </include>
 
   <!-- Spawn robot in Gazebo -->
+  <arg name="inital_config" default="-J panda_joint1 0.0
+                -J panda_joint2 0.0
+                -J panda_joint3 0.0
+                -J panda_joint4 0.0
+                -J panda_joint5 0.0
+                -J panda_joint6 3.14
+                -J panda_joint7 3.14"/>
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"
-    args="-param /robot_description -urdf -model panda"
+    args="-param /robot_description -urdf -model panda $(arg inital_config)"
     output="screen"/>
-
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 
 </launch>
 
