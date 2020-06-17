@@ -28,6 +28,7 @@ endif()
 include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
 add_library(${PROJECT_NAME}
+  src/math/math.cpp
   src/modeling/robot_wrapper.cc
   src/controllers/end_effector_controllers/task_space_controller.cc)
 target_link_libraries(${PROJECT_NAME}  ${PINOCCHIO_LIBRARIES} ${catkin_LIBRAIRES})
