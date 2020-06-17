@@ -4,24 +4,38 @@
   <!-- Gazebo simulation -->
   <arg name="simulation" default="false"/>
   <group if="$(arg simulation)">
-  <include file="$(find robot_control_ros)/launch/gazebo.launch">
-    <arg name="run_gui" value="false"/>
-    <arg name="paused" value="false"/>
-  </include>
+    <include file="$(find robot_control_ros)/launch/gazebo.launch">
+      <arg name="run_gui" value="false"/>
+      <arg name="paused" value="false"/>
+    </include>
   </group>
+
+  <group unless="$(arg simulation)">
+    <!-- Path of robot description -->
+    <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/panda/panda.urdf.xacro"/>
+
+    <!-- Load robot description for gazebo -->
+    <param name="robot_description" command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/>
+
+    <node name="franka_control" pkg="franka_control" type="franka_control_node" output="screen" required="true">
+      <rosparam command="load" file="$(find franka_control)/config/franka_control_node.yaml" />
+      <param name="robot_ip" value="$(arg robot_ip)" />
+    </node>
+  </group>
+
 
   <!-- Publish robot state (joints) as TF -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
     <param name="publish_frequency" value="100"/>
     <param name="use_tf_static"     value="true"/>
     <remap from="robot_description" to="/robot_description"/>
-    <remap from="joint_states"      to="/joint_states"/>
+    <remap from="joint_states"      to="/franka_state_controller/joint_states"/>
   </node>
+  <node name="state_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="franka_state_controller"/>
 
   <!--  Controller params-->
   <rosparam file="$(find robot_control_ros)/params/controllers.yaml" command="load"/>
-  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen" ns="/" args="joint_state_controller panda_trajectory_controller"/>
+  <rosparam command="load" file="$(find franka_control)/config/default_controllers.yaml" />
 
   <group if="$(arg simulation)">
   <!-- Controller manager gui -->
@@ -30,4 +44,5 @@
   <!-- Open Rviz -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_control_ros)/config/cfg.rviz" output="screen"/>
   </group>
+
 </launch>

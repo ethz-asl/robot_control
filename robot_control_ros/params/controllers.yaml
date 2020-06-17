@@ -49,6 +49,7 @@ panda_trajectory_controller:
 task_space_controller:
   type: "robot_control_ros/TaskSpaceController"
   controlled_frame: "panda_hand"
+  publish_ros: true
 
 task_space_controller_sim:
   type: "robot_control_ros/TaskSpaceControllerSim"

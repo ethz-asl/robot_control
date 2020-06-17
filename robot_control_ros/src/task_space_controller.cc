@@ -18,7 +18,7 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
     ROS_ERROR_STREAM("Can't read robot description.");
     return false;
   }
-  if (!node_handle.getParam("controlled_frame", controlled_frame)) {
+  if (!ctrl_handle.getParam("controlled_frame", controlled_frame)) {
     ROS_ERROR_STREAM("Set the controlled_frame parameter.");
     return false;
   }
