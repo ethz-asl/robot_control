@@ -13,6 +13,7 @@ set(PROJECT_DEPENDENCIES
   hardware_interface
   pluginlib
   roscpp
+  realtime_tools
 )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})

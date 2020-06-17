@@ -3,7 +3,8 @@
 
   <!-- Gazebo simulation -->
   <include file="$(find robot_control_ros)/launch/gazebo.launch">
-    <arg name="run_gui" value="false"/>
+    <arg name="run_gui" value="true"/>
+    <arg name="paused" value="true"/>
   </include>
 
   <!-- Publish robot state (joints) as TF -->

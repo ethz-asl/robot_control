@@ -10,9 +10,8 @@
 #include <ros/node_handle.h>
 #include <ros/time.h>
 
-#include <franka_example_controllers/compliance_paramConfig.h>
-#include <franka_hw/franka_model_interface.h>
-#include <franka_hw/franka_state_interface.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <realtime_tools/realtime_publisher.h>
 
 namespace rc_ros {
 class TaskSpaceControllerSim : public controller_interface::MultiInterfaceController<
@@ -27,6 +26,7 @@ class TaskSpaceControllerSim : public controller_interface::MultiInterfaceContro
 
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
+  void publishRos();
 
   private:
   rc::RobotWrapper* robot_wrapper;
@@ -39,6 +39,13 @@ class TaskSpaceControllerSim : public controller_interface::MultiInterfaceContro
     "panda_joint2", "panda_joint3", "panda_joint4", "panda_joint5",
     "panda_joint6", "panda_joint7"};
 
+  std::string controlled_frame_;
+  pin::SE3 target_pose_;
+  pin::SE3 current_pose_;
+
+  bool publish_ros_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> pose_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> target_publisher_;
 };
 }
 
