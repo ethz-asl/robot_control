@@ -16,7 +16,7 @@ TaskSpaceController::TaskSpaceController(RobotWrapper* wrp, std::string& control
 {
   wrapper = wrp;
   kp_ = MatrixXd::Identity(6, 6) * 0.0;
-  kd_ = MatrixXd::Identity(6, 6) * 1.0;
+  kd_ = MatrixXd::Identity(6, 6) * 10.0;
   int dof = wrapper->getDof();
   kqd_ns = 0.1 * MatrixXd::Identity(dof, dof);
   kqp_res = 0.1 * MatrixXd::Identity(dof, dof);
@@ -72,7 +72,7 @@ VectorXd TaskSpaceController::computeCommand() {
   // null-space control
   VectorXd epsilon = -(kqd_ns * wrapper->v) - kqp_res * (wrapper->q - q_rest);
   VectorXd tau_null_space = linear_algebra::computeNullSpace(J) * epsilon;
-  return wrapper->getInertia() * y + wrapper->getNonLinearTerms() + tau_null_space;
+  return wrapper->getInertia() * y  + wrapper->getNonLinearTerms();
 }
 
 VectorXd TaskSpaceController::advance(VectorXd& q, VectorXd v) {
