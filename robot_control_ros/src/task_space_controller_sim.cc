@@ -126,7 +126,6 @@ void TaskSpaceControllerSim::publishRos() {
     pose_publisher_->msg_.pose.orientation.w = q.w();
     pose_publisher_->unlockAndPublish();
   }
-
 }
 
 }

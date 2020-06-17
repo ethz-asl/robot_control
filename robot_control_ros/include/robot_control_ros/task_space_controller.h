@@ -9,6 +9,8 @@
 #include <hardware_interface/robot_hw.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <realtime_tools/realtime_publisher.h>
 
 #include <franka_example_controllers/compliance_paramConfig.h>
 #include <franka_hw/franka_state_interface.h>
@@ -23,6 +25,7 @@ class TaskSpaceController : public controller_interface::MultiInterfaceControlle
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
   void starting(const ros::Time&) override;
   void update(const ros::Time&, const ros::Duration& period) override;
+  void publishRos();
 
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
@@ -39,6 +42,13 @@ class TaskSpaceController : public controller_interface::MultiInterfaceControlle
     "panda_joint2", "panda_joint3", "panda_joint4", "panda_joint5",
     "panda_joint6", "panda_joint7"};
 
+  std::string controlled_frame_;
+  pin::SE3 target_pose_;
+  pin::SE3 current_pose_;
+
+  bool publish_ros_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> pose_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> target_publisher_;
 };
 }
 

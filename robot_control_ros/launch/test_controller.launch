@@ -2,10 +2,13 @@
 <launch>
 
   <!-- Gazebo simulation -->
+  <arg name="simulation" default="false"/>
+  <group if="$(arg simulation)">
   <include file="$(find robot_control_ros)/launch/gazebo.launch">
     <arg name="run_gui" value="false"/>
     <arg name="paused" value="true"/>
   </include>
+  </group>
 
   <!-- Publish robot state (joints) as TF -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
@@ -20,10 +23,11 @@
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
       output="screen" ns="/" args="joint_state_controller panda_trajectory_controller"/>
 
+  <group if="$(arg simulation)">
   <!-- Controller manager gui -->
   <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 
   <!-- Open Rviz -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_control_ros)/config/cfg.rviz" output="screen"/>
-
+  </group>
 </launch>

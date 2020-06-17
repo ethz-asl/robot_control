@@ -24,6 +24,11 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
     return false;
   }
 
+  if (!ctrl_handle.getParam("publish_ros", publish_ros_)) {
+    ROS_ERROR_STREAM("Set the publish_ros parameter.");
+    return false;
+  }
+
   robot_wrapper = new rc::RobotWrapper();
   robot_wrapper->initFromXml(robot_description);
   controller = new rc::TaskSpaceController(robot_wrapper, controlled_frame);
@@ -54,6 +59,9 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
       return false;
     }
   }
+
+  pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/current_pose", 10);
+  target_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/target_pose", 10);
   return true;
 }
 
@@ -72,6 +80,8 @@ void TaskSpaceController::update(const ros::Time& time, const ros::Duration& per
   for (int i=0; i < 7; i++) {
     joint_handles_[i].setCommand(command[i]);
   }
+  if (publish_ros_)
+    publishRos();
 }
 
 Eigen::VectorXd TaskSpaceController::getJointVelocities() const {
@@ -88,6 +98,37 @@ Eigen::VectorXd TaskSpaceController::getJointPositions() const {
   Eigen::VectorXd joint_positions = Eigen::VectorXd::Zero(9);
   joint_positions.head<7>() = Eigen::Matrix<double, 7, 1>::Map(state.q.data());
   return joint_positions;
+}
+
+void TaskSpaceController::publishRos() {
+  if (target_publisher_->trylock()){
+    target_publisher_->msg_.header.stamp = ros::Time::now();
+    target_publisher_->msg_.header.frame_id = "world";
+    target_publisher_->msg_.pose.position.x = target_pose_.translation()(0);
+    target_publisher_->msg_.pose.position.y = target_pose_.translation()(1);
+    target_publisher_->msg_.pose.position.z = target_pose_.translation()(2);
+    Eigen::Quaterniond q(target_pose_.rotation());
+    target_publisher_->msg_.pose.orientation.x = q.x();
+    target_publisher_->msg_.pose.orientation.y = q.y();
+    target_publisher_->msg_.pose.orientation.z = q.z();
+    target_publisher_->msg_.pose.orientation.w = q.w();
+    target_publisher_->unlockAndPublish();
+  }
+
+  if (pose_publisher_->trylock()){
+    current_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
+    pose_publisher_->msg_.header.stamp = ros::Time::now();
+    pose_publisher_->msg_.header.frame_id = "world";
+    pose_publisher_->msg_.pose.position.x = current_pose_.translation()(0);
+    pose_publisher_->msg_.pose.position.y = current_pose_.translation()(1);
+    pose_publisher_->msg_.pose.position.z = current_pose_.translation()(2);
+    Eigen::Quaterniond q(current_pose_.rotation());
+    pose_publisher_->msg_.pose.orientation.x = q.x();
+    pose_publisher_->msg_.pose.orientation.y = q.y();
+    pose_publisher_->msg_.pose.orientation.z = q.z();
+    pose_publisher_->msg_.pose.orientation.w = q.w();
+    pose_publisher_->unlockAndPublish();
+  }
 }
 
 }
