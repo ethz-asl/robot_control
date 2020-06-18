@@ -12,7 +12,8 @@ class TaskSpaceController {
   RobotWrapper* wrapper;
   pin::SE3 target;
   bool target_set = false;
-  JacobiSVD<MatrixXd> solver;
+  JacobiSVD<MatrixXd> svd;
+  linear_algebra::DLSSolver solver;
   MatrixXd J;
   MatrixXd dJ;
 
@@ -30,7 +31,7 @@ class TaskSpaceController {
 
   VectorXd computeCommand();
 
-  VectorXd advance(VectorXd& q, VectorXd v);
+  VectorXd advance(VectorXd& q, VectorXd& v);
 
 };
 }

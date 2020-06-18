@@ -6,7 +6,7 @@
   <group if="$(arg simulation)">
   <include file="$(find robot_control_ros)/launch/gazebo.launch">
     <arg name="run_gui" value="false"/>
-    <arg name="paused" value="true"/>
+    <arg name="paused" value="false"/>
   </include>
   </group>
 

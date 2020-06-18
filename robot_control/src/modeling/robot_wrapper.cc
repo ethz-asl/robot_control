@@ -93,7 +93,7 @@ void RobotWrapper::getAllFrameJacobians(const std::string& frame_name, Eigen::Ma
   pin::getFrameJacobianTimeVariation(model, data, frame_id, pin::ReferenceFrame::LOCAL, dJ);
 }
 
-pin::SE3 RobotWrapper::getFramePlacement(std::string& frame_name) {
+pin::SE3& RobotWrapper::getFramePlacement(std::string& frame_name) {
   auto frame_id = model.getFrameId(frame_name);
   return data.oMf[frame_id];
 }
@@ -108,7 +108,7 @@ MatrixXd RobotWrapper::getInertia() {
   data.M.transpose().template triangularView<Eigen::StrictlyLower>();
   return data.M;}
 
-VectorXd RobotWrapper::getNonLinearTerms() { return data.nle; }
+VectorXd& RobotWrapper::getNonLinearTerms() { return data.nle; }
 
 void RobotWrapper::computeAllTerms() {
   pin::computeAllTerms(model, data, q, v);

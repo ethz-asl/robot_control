@@ -12,7 +12,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <realtime_tools/realtime_publisher.h>
 
-#include <franka_example_controllers/compliance_paramConfig.h>
 #include <franka_hw/franka_state_interface.h>
 
 namespace rc_ros {

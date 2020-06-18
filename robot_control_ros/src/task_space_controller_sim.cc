@@ -76,7 +76,7 @@ void TaskSpaceControllerSim::update(const ros::Time& time, const ros::Duration& 
   for (int i=0; i < 7; i++) {
     joint_handles_[i].setCommand(command[i]);
   }
-  if (publish_ros_){
+  if (publish_ros_) {
     publishRos();
   }
 }

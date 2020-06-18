@@ -13,17 +13,21 @@
 using namespace Eigen;
 using namespace linear_algebra;
 
-TEST(LinearAlgebra, ComputeAdaptiveDampedPseudoInverse){
+TEST(LinearAlgebra, computeAdaptiveDampedPseudoInverse){
+  JacobiSVD<MatrixXd> svd;
   // trivial case
   MatrixXd I = MatrixXd::Identity(6, 6);
-  MatrixXd Ipinv = computePInvDLS(I, 0.2, 0.4);
+  DLSSolver solver(svd, 0.2, 0.4);
+  solver.compute(I);
+  MatrixXd Ipinv = solver.matrix();
   EXPECT_TRUE(I.isApprox(Ipinv));
 
   // one zero singular value
   VectorXd v = VectorXd::Ones(4); v(3) = 0;
   MatrixXd M = v.asDiagonal();
-  JacobiSVD<MatrixXd> solver(M.rows(), M.cols());
-  MatrixXd Mpinv = computePInvDLS(solver, M, 0.2, 0.4);
+  DLSSolver solver2(svd, 0.2, 0.4);
+  solver2.compute(M);
+  MatrixXd Mpinv = solver2.matrix();
   JacobiSVD<MatrixXd> Mpinv_svd(Mpinv, ComputeThinU | ComputeThinV);
   const VectorXd& sigma = Mpinv_svd.singularValues();
   double sigma_max = sigma.head<1>()(0);
@@ -33,23 +37,17 @@ TEST(LinearAlgebra, ComputeAdaptiveDampedPseudoInverse){
 
   // more cols than rows
   Matrix<double, 6, 12> Q; Q.setRandom();
-  ASSERT_NO_THROW(computePInvDLS(Q));
+  DLSSolver solver3(svd);
+  ASSERT_NO_THROW(solver3.compute(Q));
+  ASSERT_NO_THROW(solver3.matrix());
 
   // more rows than cols
   Matrix<double, 12, 6> P; P.setRandom();
-  ASSERT_NO_THROW(computePInvDLS(P));
-}
-
-TEST(LinearAlgebra, AdaptSingularValues){
-  MatrixXd A = MatrixXd::Identity(6, 6) * 0.3;
-  MatrixXd A_adapted = adaptSingularValues(A, 0.5);
-  VectorXd s = VectorXd::Ones(6) * 0.5;
-  EXPECT_TRUE(s.isApprox(A_adapted.diagonal()));
-
-  MatrixXd B = MatrixXd::Identity(6, 6) * 0.5;
-  MatrixXd B_adapted = adaptSingularValues(B, 0.3);
-  VectorXd v = VectorXd::Ones(6) * 0.5;
-  EXPECT_TRUE(v.isApprox(B_adapted.diagonal()));
+  DLSSolver solver4(svd);
+  VectorXd ones = VectorXd::Ones(6);
+  ASSERT_NO_THROW(solver4.compute(P));
+  ASSERT_NO_THROW(solver4.matrix());
+  ASSERT_NO_THROW(solver4.solve(ones));
 }
 
 TEST(LinearAlgebra, ComputeNullSpace){

@@ -17,7 +17,9 @@ namespace rc_ros {
 class TaskSpaceControllerSim : public controller_interface::MultiInterfaceController<
     hardware_interface::EffortJointInterface,
     hardware_interface::JointStateInterface> {
+
   public:
+
   int END_EFFECTOR_INDEX = 6;
 
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;

@@ -49,6 +49,7 @@ add_dependencies(rc ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 ### Testing
 if (CATKIN_ENABLE_TESTING)
   catkin_add_gtest(test_math unittest/math/math.cpp)
+  target_link_libraries(test_math ${PROJECT_NAME})
 endif()
 
 if(TARGET test_math)

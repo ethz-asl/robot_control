@@ -4,15 +4,17 @@
 #include <pinocchio/spatial/explog.hpp>
 
 
+
 using namespace Eigen;
 namespace pin = pinocchio;
 
 namespace rc {
 
 TaskSpaceController::TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame),
-  solver(6, wrp->getDof()),
+  svd(6, wrp->getDof()),
   J(6, wrp->getDof()),
-  dJ(6, wrp->getDof())
+  dJ(6, wrp->getDof()),
+  solver(svd)
 {
   wrapper = wrp;
   kp_ = MatrixXd::Identity(6, 6) * 0.0;
@@ -34,12 +36,10 @@ void TaskSpaceController::setKp(const Matrix<double, 6, 1>& kp){ kp_ = kp.asDiag
 void TaskSpaceController::setKd(const Matrix<double, 6, 1>& kd){ kd_ = kd.asDiagonal(); }
 
 VectorXd TaskSpaceController::computeCommand() {
-  pin::SE3 desired_pose;
-  pin::SE3 current_pose = wrapper->getFramePlacement(controlled_frame).normalized();
-  if (!target_set) {
-    desired_pose = current_pose;
-  } else {
-    desired_pose = target;
+  pin::SE3& current_pose = wrapper->getFramePlacement(controlled_frame);
+  pin::SE3& desired_pose = current_pose;
+  if (target_set) {
+    pin::SE3& desired_pose = target;
   }
 
   Quaternion<double> dR(current_pose.rotation().transpose() * desired_pose.rotation());
@@ -66,16 +66,12 @@ VectorXd TaskSpaceController::computeCommand() {
 
   // task space dynamics
   VectorXd error = kp_ * position_error + kd_ * velocity_error - dJ * wrapper->v;
-  MatrixXd Jpinv = linear_algebra::computePInvDLS(solver, J);
-  VectorXd y = Jpinv * error;
-
-  // null-space control
-  VectorXd epsilon = -(kqd_ns * wrapper->v) - kqp_res * (wrapper->q - q_rest);
-  VectorXd tau_null_space = linear_algebra::computeNullSpace(J) * epsilon;
+  solver.compute(J);
+  VectorXd y = solver.solve(error);
   return wrapper->getInertia() * y  + wrapper->getNonLinearTerms();
 }
 
-VectorXd TaskSpaceController::advance(VectorXd& q, VectorXd v) {
+VectorXd TaskSpaceController::advance(VectorXd& q, VectorXd& v) {
   wrapper->updateState(q, v, true);
   return computeCommand();
 }

@@ -1,8 +1,7 @@
 #include "robot_control_ros/task_space_controller.h"
 
+#include <franka_example_controllers/compliance_paramConfig.h>
 #include <cmath>
-#include <memory>
-
 #include <Eigen/Dense>
 #include <controller_interface/controller_base.h>
 #include <franka/robot_state.h>
