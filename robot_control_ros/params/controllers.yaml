@@ -55,3 +55,4 @@ task_space_controller_sim:
   type: "robot_control_ros/TaskSpaceControllerSim"
   controlled_frame: "panda_hand"
   publish_ros: false
+
