@@ -11,7 +11,8 @@
 
 namespace rc_ros {
 
-bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) {
+template<class StateInterface, class StateHandle>
+bool TaskSpaceControllerBase<StateInterface, StateHandle>::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) {
   std::string robot_description;
   std::string controlled_frame;
   if (!node_handle.getParam("/robot_description", robot_description)) {
@@ -32,31 +33,9 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
   robot_wrapper->initFromXml(robot_description);
   controller = new rc::TaskSpaceController(robot_wrapper, controlled_frame);
 
-  auto* state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
-  if (state_interface == nullptr) {
-    ROS_ERROR_STREAM("Can't get franka state interface");
-    return false;
-  }
-  try {
-    state_handle_ = std::make_unique<franka_hw::FrankaStateHandle>(
-        state_interface->getHandle("panda_robot"));
-  } catch (hardware_interface::HardwareInterfaceException& ex) {
-    ROS_ERROR_STREAM("Excepion getting franka state handle: " << ex.what());
-    return false;
-  }
-
-  auto* effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
-  if (effort_joint_interface == nullptr) {
-    ROS_ERROR_STREAM("Error getting effort joint interface.");
-    return false;
-  }
-  for (size_t i = 0; i < 7; ++i) {
-    try {
-      joint_handles_.push_back(effort_joint_interface->getHandle(joint_names_[i]));
-    } catch (const hardware_interface::HardwareInterfaceException& ex) {
-      ROS_ERROR_STREAM("Exception getting joint handles: " << ex.what());
-      return false;
-    }
+  bool added = addStateHandles(robot_hw);
+  if (!added) {
+    return added;
   }
 
   pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/current_pose", 10);
@@ -64,15 +43,70 @@ bool TaskSpaceController::init(hardware_interface::RobotHW* robot_hw, ros::NodeH
   return true;
 }
 
-void TaskSpaceController::starting(const ros::Time& time) {
-  Eigen::Affine3d initial_transform;
-  franka::RobotState initial_state = state_handle_->getRobotState();
-  initial_transform = Eigen::Affine3d(Eigen::Matrix4d::Map(initial_state.O_T_EE.data()));
-  pin::SE3 target = pin::SE3(initial_transform.rotation(), initial_transform.translation());
-  controller->setTaskTarget(target);
+bool TaskSpaceController::addStateHandles(hardware_interface::RobotHW* robot_hw) {
+  franka_hw::FrankaStateInterface* state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
+  if (state_interface == nullptr) {
+    ROS_ERROR_STREAM("Can't get franka state interface");
+    return false;
+  }
+
+  std::unique_ptr<franka_hw::FrankaStateHandle> state_handle;
+  try {
+    state_handle = std::make_unique<franka_hw::FrankaStateHandle>(state_interface->getHandle("panda_robot"));
+  } catch (hardware_interface::HardwareInterfaceException& ex) {
+    ROS_ERROR_STREAM("Excepion getting franka state handle: " << ex.what());
+    return false;
+  }
+
+  const franka::RobotState& state = state_handle->getRobotState();
+  for (size_t i = 0; i < 7; i++) {
+    hardware_interface::JointStateHandle joint_state_handle = hardware_interface::JointStateHandle(joint_names_[i], &state.q[i],
+        &state.dq[i], &state.tau_J[i]);
+    state_handles_.push_back(joint_state_handle);
+  }
+
+  hardware_interface::EffortJointInterface* effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
+  if (effort_joint_interface == nullptr) {
+    ROS_ERROR_STREAM("Error getting effort joint interface.");
+    return false;
+  }
+  for (auto& joint_name : joint_names_) {
+    joint_handles_.push_back(effort_joint_interface->getHandle(joint_name));
+  }
+  return true;
+
 }
 
-void TaskSpaceController::update(const ros::Time& time, const ros::Duration& period) {
+bool TaskSpaceControllerSim::addStateHandles(hardware_interface::RobotHW* robot_hw) {
+  hardware_interface::JointStateInterface* state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
+  if (state_interface == nullptr) {
+    ROS_ERROR_STREAM("Can't get franka state interface");
+    return false;
+  }
+
+  hardware_interface::EffortJointInterface* effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
+  if (effort_joint_interface == nullptr) {
+    ROS_ERROR_STREAM("Error getting effort joint interface.");
+    return false;
+  }
+  for (auto& joint_name : joint_names_) {
+    state_handles_.push_back(state_interface->getHandle(joint_name));
+    joint_handles_.push_back(effort_joint_interface->getHandle(joint_name));
+  }
+  return true;
+}
+
+template<class SI, class SH>
+void TaskSpaceControllerBase<SI, SH>::starting(const ros::Time& time) {
+  Eigen::VectorXd initial_q = getJointPositions();
+  Eigen::VectorXd initial_v = getJointVelocities();
+  robot_wrapper->updateState(initial_q, initial_v);
+  target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
+  controller->setTaskTarget(target_pose_);
+}
+
+template<class SI, class SH>
+void TaskSpaceControllerBase<SI, SH>::update(const ros::Time& time, const ros::Duration& period) {
   Eigen::VectorXd joint_positions = getJointPositions();
   Eigen::VectorXd joint_velocities = getJointVelocities();
   Eigen::VectorXd command = controller->advance(joint_positions, joint_velocities);
@@ -83,23 +117,26 @@ void TaskSpaceController::update(const ros::Time& time, const ros::Duration& per
     publishRos();
 }
 
-Eigen::VectorXd TaskSpaceController::getJointVelocities() const {
-  // gripper adds 2 joints but franka state reports only the arm
-  franka::RobotState state = state_handle_->getRobotState();
+template<class SI, class SH>
+Eigen::VectorXd TaskSpaceControllerBase<SI, SH>::getJointVelocities() const {
   Eigen::VectorXd joint_velocities = Eigen::VectorXd::Zero(9);
-  joint_velocities.head<7>() = Eigen::Matrix<double, 7, 1>::Map(state.dq.data());
+  for(size_t i=0; i < 7; i++){
+    joint_velocities(i) = state_handles_[i].getVelocity();
+  }
   return joint_velocities;
 }
 
-Eigen::VectorXd TaskSpaceController::getJointPositions() const {
-  // gripper adds 2 joints but franka state reports only the arm
-  franka::RobotState state = state_handle_->getRobotState();
+template<class SI, class SH>
+Eigen::VectorXd TaskSpaceControllerBase<SI, SH>::getJointPositions() const {
   Eigen::VectorXd joint_positions = Eigen::VectorXd::Zero(9);
-  joint_positions.head<7>() = Eigen::Matrix<double, 7, 1>::Map(state.q.data());
+  for(size_t i=0; i< 7; i++){
+    joint_positions(i) = state_handles_[i].getPosition();
+  }
   return joint_positions;
 }
 
-void TaskSpaceController::publishRos() {
+template<class SI, class SH>
+void TaskSpaceControllerBase<SI, SH>::publishRos() {
   if (target_publisher_->trylock()){
     target_publisher_->msg_.header.stamp = ros::Time::now();
     target_publisher_->msg_.header.frame_id = "world";
@@ -133,4 +170,5 @@ void TaskSpaceController::publishRos() {
 }
 
 PLUGINLIB_EXPORT_CLASS(rc_ros::TaskSpaceController, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(rc_ros::TaskSpaceControllerSim, controller_interface::ControllerBase)
 

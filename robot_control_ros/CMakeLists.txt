@@ -5,7 +5,7 @@ find_package(Eigen3 3.3 REQUIRED)
 find_package(Franka REQUIRED)
 find_package(pinocchio REQUIRED)
 
-set(PROJECT_DEPENDENCIES 
+set(PROJECT_DEPENDENCIES
   robot_control
   robot_control_assets
   controller_interface
@@ -25,7 +25,7 @@ catkin_package(
 )
 
 set(DEPENDENCY_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
-set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${PINOCCHIO_LIBRARIES})
+set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${PINOCCHIO_LIBRARIES} ${FRANKA_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 

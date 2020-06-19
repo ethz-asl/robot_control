@@ -15,26 +15,31 @@
 #include <franka_hw/franka_state_interface.h>
 
 namespace rc_ros {
-class TaskSpaceController : public controller_interface::MultiInterfaceController<
+
+template<class StateInterface, class StateHandle>
+class TaskSpaceControllerBase : public controller_interface::MultiInterfaceController<
     hardware_interface::EffortJointInterface,
-    franka_hw::FrankaStateInterface> {
+    StateInterface> {
   public:
   int END_EFFECTOR_INDEX = 6;
 
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
-  void starting(const ros::Time&) override;
+
+  void starting(const ros::Time&);
   void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
+
+  virtual bool addStateHandles(hardware_interface::RobotHW*) {};
 
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
 
-  private:
+  protected:
   bool is_real_robot_;
   rc::RobotWrapper* robot_wrapper;
   rc::TaskSpaceController* controller;
 
-  std::unique_ptr<franka_hw::FrankaStateHandle> state_handle_;
+  std::vector<hardware_interface::JointStateHandle> state_handles_;
   std::vector<hardware_interface::JointHandle> joint_handles_;
 
   std::string joint_names_[7] = {"panda_joint1",
@@ -48,6 +53,14 @@ class TaskSpaceController : public controller_interface::MultiInterfaceControlle
   bool publish_ros_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> pose_publisher_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> target_publisher_;
+};
+
+class TaskSpaceController : public TaskSpaceControllerBase<franka_hw::FrankaStateInterface, franka_hw::FrankaStateHandle> {
+  bool addStateHandles(hardware_interface::RobotHW*);
+};
+
+class TaskSpaceControllerSim : public TaskSpaceControllerBase<hardware_interface::JointStateInterface, hardware_interface::JointStateHandle> {
+  bool addStateHandles(hardware_interface::RobotHW*);
 };
 }
 
