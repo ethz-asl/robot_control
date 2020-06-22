@@ -1,5 +1,3 @@
-#!/bin/bash -e
-
 echo "Expanding env variables to find pinocchio"
 export PATH=/opt/openrobots/bin:$PATH
 export PKG_CONFIG_PATH=/opt/openrobots/lib/pkgconfig:$PKG_CONFIG_PATH
