@@ -12,7 +12,7 @@ export PATH=/opt/openrobots/bin:$PATH
 export PKG_CONFIG_PATH=/opt/openrobots/lib/pkgconfig:$PKG_CONFIG_PATH
 export LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=/opt/openrobots/lib/python2.7/site-packages:$PYTHONPATH
-
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/opt/openrobots
 printenv PATH
 ls /opt/openrobots/lib
 
