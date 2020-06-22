@@ -7,6 +7,7 @@ sudo apt install ros-melodic-libfranka ros-melodic-franka-ros
 
 echo "Installing pinocchio"
 cd robot_control/submodules/pinocchio
+git checkout v2.4.6
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
 make -j4
