@@ -3,7 +3,7 @@ echo "Running the prepare script for robot_control.";
 catkin config --cmake-args -DCMAKE_CXX_STANDARD=17
 
 sudo apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros ros-melodic-pybind11-catkin
-pip install --user pybullet
+sudo apt-get install -y python-pip && pip install --user pybullet
 
 echo "Installing pinocchio"
 sudo apt-get install -y robotpkg-py27-pinocchio
