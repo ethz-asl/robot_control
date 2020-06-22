@@ -6,7 +6,7 @@ sudo apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros
 
 
 echo "Installing pinocchio"
-sudo apt install robotpkg-py27-pinocchio
+sudo apt-get install -y robotpkg-py27-pinocchio
 export PATH=/opt/openrobots/bin:$PATH
 export PKG_CONFIG_PATH=/opt/openrobots/lib/pkgconfig:$PKG_CONFIG_PATH
 export LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
