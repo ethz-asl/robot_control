@@ -14,6 +14,7 @@ export LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=/opt/openrobots/lib/python2.7/site-packages:$PYTHONPATH
 
 printenv PATH
+ls /opt/openrobots/lib
 
 #cd robot_control/submodules/pinocchio
 #git checkout v2.4.6
