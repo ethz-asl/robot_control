@@ -2,15 +2,18 @@
 echo "Running the prepare script for robot_control.";
 catkin config --cmake-args -DCMAKE_CXX_STANDARD=17
 
-sudo apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros
+sudo apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros ros-melodic-pybind11-catkin
 
 
 echo "Installing pinocchio"
 sudo apt-get install -y robotpkg-py27-pinocchio
+ls /opt/openrobots/bin
 export PATH=/opt/openrobots/bin:$PATH
 export PKG_CONFIG_PATH=/opt/openrobots/lib/pkgconfig:$PKG_CONFIG_PATH
 export LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=/opt/openrobots/lib/python2.7/site-packages:$PYTHONPATH
+
+printenv PATH
 
 #cd robot_control/submodules/pinocchio
 #git checkout v2.4.6
