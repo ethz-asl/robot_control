@@ -61,7 +61,7 @@ PYBIND11_MODULE(rc, m) {
 
   auto controllers = m.def_submodule("controllers");
   py::class_<TaskSpaceController>(controllers, "TaskSpaceController")
-    .def(py::init<RobotWrapper*, std::string&>())
+    .def(py::init<std::shared_ptr<RobotWrapper>, std::string&>())
     .def("set_task_target", &TaskSpaceController::setTaskTarget)
     .def("compute_command", &TaskSpaceController::computeCommand)
     .def("advance", &TaskSpaceController::advance)

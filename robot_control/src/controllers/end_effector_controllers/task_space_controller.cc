@@ -10,15 +10,15 @@ namespace pin = pinocchio;
 
 namespace rc {
 
-TaskSpaceController::TaskSpaceController(RobotWrapper* wrp, std::string& controlled_frame) : controlled_frame(controlled_frame),
+TaskSpaceController::TaskSpaceController(std::shared_ptr<RobotWrapper> wrp, std::string& controlled_frame) : controlled_frame(controlled_frame),
   svd(6, wrp->getDof()),
   J(6, wrp->getDof()),
   dJ(6, wrp->getDof()),
   solver(svd)
 {
   wrapper = wrp;
-  kp_ = MatrixXd::Identity(6, 6) * 0.0;
-  kd_ = MatrixXd::Identity(6, 6) * 10.0;
+  kp_ = MatrixXd::Identity(6, 6) * 10.0;
+  kd_ = MatrixXd::Identity(6, 6) * 5.0;
   int dof = wrapper->getDof();
   kqd_ns = 0.1 * MatrixXd::Identity(dof, dof);
   kqp_res = 0.1 * MatrixXd::Identity(dof, dof);
@@ -26,7 +26,8 @@ TaskSpaceController::TaskSpaceController(RobotWrapper* wrp, std::string& control
   target = pin::SE3(Matrix<double, 3, 3>::Identity(), Matrix<double, 3, 1>::Zero());
 }
 
-void TaskSpaceController::setTaskTarget(pin::SE3& task_target) {
+void TaskSpaceController::setTaskTarget(pin::SE3 task_target) {
+  std::lock_guard<std::mutex> lock(target_mutex);
   target = task_target;
   target_set = true;
 }
@@ -36,10 +37,13 @@ void TaskSpaceController::setKp(const Matrix<double, 6, 1>& kp){ kp_ = kp.asDiag
 void TaskSpaceController::setKd(const Matrix<double, 6, 1>& kd){ kd_ = kd.asDiagonal(); }
 
 VectorXd TaskSpaceController::computeCommand() {
+  std::lock_guard<std::mutex> lock(target_mutex);
   pin::SE3& current_pose = wrapper->getFramePlacement(controlled_frame);
-  pin::SE3& desired_pose = current_pose;
+  pin::SE3 desired_pose;
   if (target_set) {
-    pin::SE3& desired_pose = target;
+    desired_pose = target;
+  } else {
+    desired_pose = current_pose;
   }
 
   Quaternion<double> dR(current_pose.rotation().transpose() * desired_pose.rotation());

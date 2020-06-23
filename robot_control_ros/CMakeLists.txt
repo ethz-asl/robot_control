@@ -14,6 +14,7 @@ set(PROJECT_DEPENDENCIES
   pluginlib
   roscpp
   realtime_tools
+  interactive_markers
 )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})

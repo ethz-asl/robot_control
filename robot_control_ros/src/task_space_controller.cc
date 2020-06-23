@@ -8,6 +8,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <ros/ros.h>
 #include <pinocchio/spatial/se3.hpp>
+#include <functional>
 
 namespace rc_ros {
 
@@ -29,9 +30,9 @@ bool TaskSpaceControllerBase<StateInterface, StateHandle>::init(hardware_interfa
     return false;
   }
 
-  robot_wrapper = new rc::RobotWrapper();
+  robot_wrapper = std::make_shared<rc::RobotWrapper>();
   robot_wrapper->initFromXml(robot_description);
-  controller = new rc::TaskSpaceController(robot_wrapper, controlled_frame);
+  controller = std::make_shared<rc::TaskSpaceController>(robot_wrapper, controlled_frame);
 
   bool added = addStateHandles(robot_hw);
   if (!added) {
@@ -40,7 +41,69 @@ bool TaskSpaceControllerBase<StateInterface, StateHandle>::init(hardware_interfa
 
   pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/current_pose", 10);
   target_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/target_pose", 10);
+
+  initMarker();
+
   return true;
+}
+
+template<class SI, class SH>
+void TaskSpaceControllerBase<SI, SH>::initMarker() {
+  marker_server = std::make_shared<interactive_markers::InteractiveMarkerServer>("target_pose");
+  visualization_msgs::Marker marker;
+  visualization_msgs::InteractiveMarker interactive_marker;
+  visualization_msgs::InteractiveMarkerControl control;
+  marker.type = visualization_msgs::Marker::ARROW;
+  marker.scale.x = 0.1;
+  marker.scale.y = 0.01;
+  marker.scale.z = 0.01;
+  marker.color.r = 0.3;
+  marker.color.g = 0.3;
+  marker.color.b = 0.5;
+  marker.color.a = 1.0;
+  Eigen::Quaterniond orn(0.0, 1.0, 0.0, 0.0);
+  orn = orn.normalized();
+  interactive_marker.pose.position.x = 0.5;
+  interactive_marker.pose.position.y = 0.0;
+  interactive_marker.pose.position.z = 0.5;
+  interactive_marker.pose.orientation.w = orn.w();
+  interactive_marker.pose.orientation.x = orn.x();
+  interactive_marker.pose.orientation.y = orn.y();
+  interactive_marker.pose.orientation.z = orn.z();
+
+  control.name = "rotate";
+  control.always_visible = true;
+  control.markers.push_back(marker);
+  control.orientation.w = orn.w();
+  control.orientation.x = orn.x();
+  control.orientation.y = orn.y();
+  control.orientation.z = orn.z();
+  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE_3D;
+  interactive_marker.controls.push_back(control);
+
+  interactive_marker.header.frame_id = "world";
+  interactive_marker.name = "target_pose";
+  marker_server->insert(interactive_marker);
+  auto cb = std::bind(&TaskSpaceControllerBase::markerCallback, this, std::placeholders::_1);
+  marker_server->setCallback(interactive_marker.name, cb);
+  marker_server->applyChanges();
+}
+
+template<class SI, class SH>
+void TaskSpaceControllerBase<SI, SH>::markerCallback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &msg) {
+  Eigen::Vector3d translation(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+  Eigen::Quaterniond rotation(msg->pose.orientation.w, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z);
+  Eigen::Quaterniond correction(0.707, 0.0, -0.707, 0.0); // We want to control the z axis of the hand.
+  pin::SE3 target(correction * rotation, translation);
+  controller->setTaskTarget(target);
+}
+
+template <class SI, class SH>
+void TaskSpaceControllerBase<SI, SH>::newTargetCallback(const geometry_msgs::PoseStamped& msg) {
+  Eigen::Vector3d translation(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+  Eigen::Quaterniond rotation(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z);
+  pin::SE3 target(rotation, translation);
+  controller->setTaskTarget(target);
 }
 
 bool TaskSpaceController::addStateHandles(hardware_interface::RobotHW* robot_hw) {
@@ -98,11 +161,6 @@ bool TaskSpaceControllerSim::addStateHandles(hardware_interface::RobotHW* robot_
 
 template<class SI, class SH>
 void TaskSpaceControllerBase<SI, SH>::starting(const ros::Time& time) {
-  Eigen::VectorXd initial_q = getJointPositions();
-  Eigen::VectorXd initial_v = getJointVelocities();
-  robot_wrapper->updateState(initial_q, initial_v);
-  target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
-  controller->setTaskTarget(target_pose_);
 }
 
 template<class SI, class SH>
@@ -129,7 +187,7 @@ Eigen::VectorXd TaskSpaceControllerBase<SI, SH>::getJointVelocities() const {
 template<class SI, class SH>
 Eigen::VectorXd TaskSpaceControllerBase<SI, SH>::getJointPositions() const {
   Eigen::VectorXd joint_positions = Eigen::VectorXd::Zero(9);
-  for(size_t i=0; i< 7; i++){
+  for(size_t i=0; i< 7; i++) {
     joint_positions(i) = state_handles_[i].getPosition();
   }
   return joint_positions;
@@ -137,7 +195,7 @@ Eigen::VectorXd TaskSpaceControllerBase<SI, SH>::getJointPositions() const {
 
 template<class SI, class SH>
 void TaskSpaceControllerBase<SI, SH>::publishRos() {
-  if (target_publisher_->trylock()){
+  if (target_publisher_->trylock()) {
     target_publisher_->msg_.header.stamp = ros::Time::now();
     target_publisher_->msg_.header.frame_id = "world";
     target_publisher_->msg_.pose.position.x = target_pose_.translation()(0);

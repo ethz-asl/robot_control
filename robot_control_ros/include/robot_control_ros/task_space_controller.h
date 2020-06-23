@@ -14,6 +14,9 @@
 
 #include <franka_hw/franka_state_interface.h>
 
+#include <interactive_markers/interactive_marker_server.h>
+#include <interactive_markers/menu_handler.h>
+
 namespace rc_ros {
 
 template<class StateInterface, class StateHandle>
@@ -24,6 +27,7 @@ class TaskSpaceControllerBase : public controller_interface::MultiInterfaceContr
   int END_EFFECTOR_INDEX = 6;
 
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
+  void newTargetCallback(const geometry_msgs::PoseStamped&);
 
   void starting(const ros::Time&);
   void update(const ros::Time&, const ros::Duration& period) override;
@@ -33,11 +37,16 @@ class TaskSpaceControllerBase : public controller_interface::MultiInterfaceContr
 
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
+  ros::Subscriber target_subscriber;
 
   protected:
-  bool is_real_robot_;
-  rc::RobotWrapper* robot_wrapper;
-  rc::TaskSpaceController* controller;
+  std::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server;
+
+  void initMarker();
+  void markerCallback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &);
+
+  std::shared_ptr<rc::RobotWrapper> robot_wrapper;
+  std::shared_ptr<rc::TaskSpaceController> controller;
 
   std::vector<hardware_interface::JointStateHandle> state_handles_;
   std::vector<hardware_interface::JointHandle> joint_handles_;
