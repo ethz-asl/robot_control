@@ -15,7 +15,6 @@
 #include <franka_hw/franka_state_interface.h>
 
 #include <interactive_markers/interactive_marker_server.h>
-#include <interactive_markers/menu_handler.h>
 
 namespace rc_ros {
 
@@ -37,7 +36,6 @@ class TaskSpaceControllerBase : public controller_interface::MultiInterfaceContr
 
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
-  ros::Subscriber target_subscriber;
 
   protected:
   std::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server;

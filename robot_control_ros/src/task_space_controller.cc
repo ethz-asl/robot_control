@@ -43,23 +43,23 @@ bool TaskSpaceControllerBase<StateInterface, StateHandle>::init(hardware_interfa
   target_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/target_pose", 10);
 
   initMarker();
-
   return true;
 }
 
 template<class SI, class SH>
 void TaskSpaceControllerBase<SI, SH>::initMarker() {
-  marker_server = std::make_shared<interactive_markers::InteractiveMarkerServer>("target_pose");
+  marker_server = std::make_shared<interactive_markers::InteractiveMarkerServer>("target_pose",
+  "", true);
   visualization_msgs::Marker marker;
   visualization_msgs::InteractiveMarker interactive_marker;
   visualization_msgs::InteractiveMarkerControl control;
   marker.type = visualization_msgs::Marker::ARROW;
-  marker.scale.x = 0.1;
+  marker.scale.x = 0.2;
   marker.scale.y = 0.01;
   marker.scale.z = 0.01;
-  marker.color.r = 0.3;
-  marker.color.g = 0.3;
-  marker.color.b = 0.5;
+  marker.color.r = 0.5;
+  marker.color.g = 0.5;
+  marker.color.b = 0.75;
   marker.color.a = 1.0;
   Eigen::Quaterniond orn(0.0, 1.0, 0.0, 0.0);
   orn = orn.normalized();
@@ -137,7 +137,6 @@ bool TaskSpaceController::addStateHandles(hardware_interface::RobotHW* robot_hw)
     joint_handles_.push_back(effort_joint_interface->getHandle(joint_name));
   }
   return true;
-
 }
 
 bool TaskSpaceControllerSim::addStateHandles(hardware_interface::RobotHW* robot_hw) {
@@ -160,8 +159,7 @@ bool TaskSpaceControllerSim::addStateHandles(hardware_interface::RobotHW* robot_
 }
 
 template<class SI, class SH>
-void TaskSpaceControllerBase<SI, SH>::starting(const ros::Time& time) {
-}
+void TaskSpaceControllerBase<SI, SH>::starting(const ros::Time& time) {}
 
 template<class SI, class SH>
 void TaskSpaceControllerBase<SI, SH>::update(const ros::Time& time, const ros::Duration& period) {
