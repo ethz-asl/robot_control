@@ -53,13 +53,16 @@ add_dependencies(rc ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 if (CATKIN_ENABLE_TESTING)
   catkin_add_gtest(test_math unittest/math/math.cpp)
   target_link_libraries(test_math ${PROJECT_NAME})
+
+  catkin_add_gtest(test_cartesian unittest/controllers/end_effector_controllers/test_kdl_cartesian_velocity_controller.cc)
+  target_link_libraries(test_cartesian ${PROJECT_NAME})
 endif()
 
 if(TARGET test_math)
-  target_link_libraries(
-          test_math
-          ${catkin_LIBRARIES}
-  )
+  target_link_libraries(test_math ${catkin_LIBRARIES})
+endif()
+if(TARGET test_cartesian)
+  target_link_libraries(test_cartesian ${catkin_LIBRARIES})
 endif()
 
 ### Install

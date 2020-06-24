@@ -71,5 +71,7 @@ PYBIND11_MODULE(rc, m)
       .def("set_kd", &TaskSpaceController::setKd);
 
   py::class_<CartesianVelocityController_KDL>(controllers, "CartesianVelocityControllerKDL")
-      .def(py::init<const std::string &, const std::string &, const std::string &>());
+      .def(py::init<const std::string &, const std::string &, const std::string &>())
+      .def("get_num_joints", &CartesianVelocityController_KDL::getNumJoints)
+      .def("compute_command", &CartesianVelocityController_KDL::computeCommand);
 }
