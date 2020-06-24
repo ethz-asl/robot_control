@@ -6,6 +6,7 @@
 #include "pinocchio/spatial/se3.hpp"
 #include "robot_control/modeling/robot_wrapper.h"
 #include "robot_control/controllers/end_effector_controllers/task_space_controller.h"
+#include "robot_control/controllers/end_effector_controllers/kdl_cartesian_velocity_controller.h"
 
 namespace pin = pinocchio;
 namespace py = pybind11;
@@ -68,4 +69,7 @@ PYBIND11_MODULE(rc, m)
       .def("advance", &TaskSpaceController::advance)
       .def("set_kp", &TaskSpaceController::setKp)
       .def("set_kd", &TaskSpaceController::setKd);
+
+  py::class_<CartesianVelocityController_KDL>(controllers, "CartesianVelocityControllerKDL")
+      .def(py::init<const std::string &, const std::string &, const std::string &>());
 }
