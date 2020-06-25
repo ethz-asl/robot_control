@@ -18,12 +18,6 @@ TEST(CartesianTestSuite, firstCase)
     auto cmd = ctrl.computeCommand(velocity_translation, velocity_rotation, q_in);
 }
 
-// Declare another test
-// TEST(TestSuite, testCase2)
-// {
-// <test things here, calling EXPECT_* and/or ASSERT_* macros as needed>
-// }
-
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv)
 {
