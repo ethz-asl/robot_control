@@ -2,12 +2,12 @@
 <launch>
 
   <!-- Gazebo simulation -->
-  <arg name="simulation" default="false" />
-  <arg name="gui" default="true" />
+  <arg name="simulation"  default="false" />
+  <arg name="paused"      default="true" />
   <group if="$(arg simulation)">
     <include file="$(find robot_control_ros)/launch/gazebo.launch">
       <arg name="run_gui" value="false" />
-      <arg name="paused" value="$(arg gui)" />
+      <arg name="paused" value="$(arg paused)" />
     </include>
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
       <param name="publish_frequency" value="100"/>
@@ -17,6 +17,9 @@
     </node>
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/"
       args="joint_state_controller panda_trajectory_controller" />
+    <node name="unpause_gazebo_node" pkg="robot_control_ros" type="unpause_gazebo.py" output="screen"
+          args="--delay 5.0" />
+
   </group>
 
   <group unless="$(arg simulation)">
