@@ -22,6 +22,7 @@ class RobotWrapper {
   RobotWrapper();
 
   void initFromUrdf(std::string& urdf_path);
+  void initFromXml(std::string& xml_file, bool verbose=false);
 
   // Accessors
   const Eigen::VectorXd& getQ() const;
@@ -38,10 +39,10 @@ class RobotWrapper {
   MatrixXd getJointJacobian(std::string& joint_name);
   MatrixXd getFrameJacobian(std::string& frame_name);
   void getAllFrameJacobians(const std::string& frame_name, MatrixXd&, MatrixXd&);
-  pin::SE3 getFramePlacement(std::string& frame_name);
+  pin::SE3& getFramePlacement(std::string& frame_name);
   pin::Motion getFrameVelocity(std::string& frame_name);
   MatrixXd getInertia();
-  VectorXd getNonLinearTerms();
+  VectorXd& getNonLinearTerms();
 
   // Changing state
   void updateState(const VectorXd& new_q, const VectorXd& new_v, bool update_kinematics = true);

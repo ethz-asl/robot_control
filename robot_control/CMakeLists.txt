@@ -8,16 +8,17 @@ find_package(pinocchio REQUIRED)
 find_package(PythonInterp REQUIRED)
 
 if (CATKIN_BUILD)
-  message(STATUS "Building with catkin.")
   find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
-  catkin_package(LIBRARIES ${PROJECT_NAME}
+  catkin_package(
+    LIBRARIES ${PROJECT_NAME}
+    INCLUDE_DIRS include
     CATKIN_DEPENDS pybind11_catkin)
 endif()
 
 add_subdirectory(submodules/pybind11)
 
-set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES})
-set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES} ${BOOST_LIBRARIES})
+set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS})
 
 if(CATKIN_BUILD)
   set(SYSTEM_INCLUDE_DIRECTORIES ${catkin_INCLUDE_DIRS} ${SYSTEM_INCLUDE_DIRECTORIES})
@@ -27,6 +28,8 @@ endif()
 include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
 add_library(${PROJECT_NAME}
+  src/math/math.cpp
+  src/utils/timer.cc
   src/modeling/robot_wrapper.cc
   src/controllers/end_effector_controllers/task_space_controller.cc)
 target_link_libraries(${PROJECT_NAME}  ${PINOCCHIO_LIBRARIES} ${catkin_LIBRAIRES})
@@ -45,7 +48,8 @@ add_dependencies(rc ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
 ### Testing
 if (CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(test_math unittest/math.cpp)
+  catkin_add_gtest(test_math unittest/math/math.cpp)
+  target_link_libraries(test_math ${PROJECT_NAME})
 endif()
 
 if(TARGET test_math)
@@ -54,3 +58,15 @@ if(TARGET test_math)
           ${catkin_LIBRARIES}
   )
 endif()
+
+### Install
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
+install(TARGETS ${PROJECT_NAME}
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
