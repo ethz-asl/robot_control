@@ -4,7 +4,7 @@ using namespace Eigen;
 
 namespace rc
 {
-    CartesianVelocityController_KDL::CartesianVelocityController_KDL(const std::string &urdf_file, const std::string &root_link, const std::string &tip_link)
+    void CartesianVelocityController_KDL::initFromUrdfFile(const std::string &urdf_file, const std::string &root_link, const std::string &tip_link)
     {
         KDL::Tree kdlTree;
         if (!kdl_parser::treeFromFile(urdf_file, kdlTree))
@@ -12,6 +12,22 @@ namespace rc
             throw std::invalid_argument("Failed to load URDF");
         }
 
+        setup(kdlTree, root_link, tip_link);
+    }
+
+    void CartesianVelocityController_KDL::initFromXmlString(const std::string &xml_string, const std::string &root_link, const std::string &tip_link)
+    {
+        KDL::Tree kdlTree;
+        if (!kdl_parser::treeFromString(xml_string, kdlTree))
+        {
+            throw std::invalid_argument("Failed to load URDF");
+        }
+
+        setup(kdlTree, root_link, tip_link);
+    }
+
+    void CartesianVelocityController_KDL::setup(const KDL::Tree &kdlTree, const std::string &root_link, const std::string &tip_link)
+    {
         if (!kdlTree.getChain(root_link, tip_link, kdlChain))
         {
             throw std::invalid_argument("Failed to extract chain");
