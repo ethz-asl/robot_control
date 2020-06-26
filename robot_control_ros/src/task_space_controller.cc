@@ -15,12 +15,11 @@ namespace rc_ros {
 template<class StateInterface, class StateHandle>
 bool TaskSpaceControllerBase<StateInterface, StateHandle>::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) {
   std::string robot_description;
-  std::string controlled_frame;
   if (!node_handle.getParam("/robot_description", robot_description)) {
     ROS_ERROR_STREAM("Can't read robot description.");
     return false;
   }
-  if (!ctrl_handle.getParam("controlled_frame", controlled_frame)) {
+  if (!ctrl_handle.getParam("controlled_frame", controlled_frame_)) {
     ROS_ERROR_STREAM("Set the controlled_frame parameter.");
     return false;
   }
@@ -32,82 +31,31 @@ bool TaskSpaceControllerBase<StateInterface, StateHandle>::init(hardware_interfa
 
   robot_wrapper = std::make_shared<rc::RobotWrapper>();
   robot_wrapper->initFromXml(robot_description);
-  controller = std::make_shared<rc::TaskSpaceController>(robot_wrapper, controlled_frame);
+  controller = std::make_shared<rc::TaskSpaceController>(robot_wrapper, controlled_frame_);
 
   bool added = addStateHandles(robot_hw);
   if (!added) {
     return added;
   }
 
-  pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/current_pose", 10);
-  target_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, "/target_pose", 10);
+  std::string current_pose_topic = ctrl_handle.param<std::string>("current_pose_topic", "/current_pose");
+  pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle, current_pose_topic, 10);
 
-  initMarker();
+  std::string target_pose_topic = ctrl_handle.param<std::string>("target_pose_topic", "/target_pose");
+  target_subscriber_ = node_handle.subscribe("/target_pose", 10, &TaskSpaceControllerBase::newTargetCallback, this);
   return true;
-}
-
-template<class SI, class SH>
-void TaskSpaceControllerBase<SI, SH>::initMarker() {
-  marker_server = std::make_shared<interactive_markers::InteractiveMarkerServer>("target_pose",
-  "", true);
-  visualization_msgs::Marker marker;
-  visualization_msgs::InteractiveMarker interactive_marker;
-  visualization_msgs::InteractiveMarkerControl control;
-  marker.type = visualization_msgs::Marker::ARROW;
-  marker.scale.x = 0.2;
-  marker.scale.y = 0.01;
-  marker.scale.z = 0.01;
-  marker.color.r = 0.5;
-  marker.color.g = 0.5;
-  marker.color.b = 0.75;
-  marker.color.a = 1.0;
-  Eigen::Quaterniond orn(0.0, 1.0, 0.0, 0.0);
-  orn = orn.normalized();
-  interactive_marker.pose.position.x = 0.5;
-  interactive_marker.pose.position.y = 0.0;
-  interactive_marker.pose.position.z = 0.5;
-  interactive_marker.pose.orientation.w = orn.w();
-  interactive_marker.pose.orientation.x = orn.x();
-  interactive_marker.pose.orientation.y = orn.y();
-  interactive_marker.pose.orientation.z = orn.z();
-
-  control.name = "rotate";
-  control.always_visible = true;
-  control.markers.push_back(marker);
-  control.orientation.w = orn.w();
-  control.orientation.x = orn.x();
-  control.orientation.y = orn.y();
-  control.orientation.z = orn.z();
-  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE_3D;
-  interactive_marker.controls.push_back(control);
-
-  interactive_marker.header.frame_id = "world";
-  interactive_marker.name = "target_pose";
-  marker_server->insert(interactive_marker);
-  auto cb = std::bind(&TaskSpaceControllerBase::markerCallback, this, std::placeholders::_1);
-  marker_server->setCallback(interactive_marker.name, cb);
-  marker_server->applyChanges();
-}
-
-template<class SI, class SH>
-void TaskSpaceControllerBase<SI, SH>::markerCallback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &msg) {
-  Eigen::Vector3d translation(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
-  Eigen::Quaterniond rotation(msg->pose.orientation.w, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z);
-  Eigen::Quaterniond correction(0.707, 0.0, -0.707, 0.0); // We want to control the z axis of the hand.
-  pin::SE3 target(correction * rotation, translation);
-  controller->setTaskTarget(target);
 }
 
 template <class SI, class SH>
 void TaskSpaceControllerBase<SI, SH>::newTargetCallback(const geometry_msgs::PoseStamped& msg) {
   Eigen::Vector3d translation(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
   Eigen::Quaterniond rotation(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z);
-  pin::SE3 target(rotation, translation);
-  controller->setTaskTarget(target);
+  target_pose_ = pin::SE3(rotation, translation);
+  controller->setTaskTarget(target_pose_);
 }
 
 bool TaskSpaceController::addStateHandles(hardware_interface::RobotHW* robot_hw) {
-  franka_hw::FrankaStateInterface* state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
+  auto state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
   if (state_interface == nullptr) {
     ROS_ERROR_STREAM("Can't get franka state interface");
     return false;
@@ -128,7 +76,7 @@ bool TaskSpaceController::addStateHandles(hardware_interface::RobotHW* robot_hw)
     state_handles_.push_back(joint_state_handle);
   }
 
-  hardware_interface::EffortJointInterface* effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
+  auto effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
   if (effort_joint_interface == nullptr) {
     ROS_ERROR_STREAM("Error getting effort joint interface.");
     return false;
@@ -140,13 +88,13 @@ bool TaskSpaceController::addStateHandles(hardware_interface::RobotHW* robot_hw)
 }
 
 bool TaskSpaceControllerSim::addStateHandles(hardware_interface::RobotHW* robot_hw) {
-  hardware_interface::JointStateInterface* state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
+  auto state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
   if (state_interface == nullptr) {
     ROS_ERROR_STREAM("Can't get franka state interface");
     return false;
   }
 
-  hardware_interface::EffortJointInterface* effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
+  auto effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
   if (effort_joint_interface == nullptr) {
     ROS_ERROR_STREAM("Error getting effort joint interface.");
     return false;
@@ -166,7 +114,7 @@ void TaskSpaceControllerBase<SI, SH>::update(const ros::Time& time, const ros::D
   Eigen::VectorXd joint_positions = getJointPositions();
   Eigen::VectorXd joint_velocities = getJointVelocities();
   Eigen::VectorXd command = controller->advance(joint_positions, joint_velocities);
-  for (int i=0; i < 7; i++) {
+  for (size_t i=0; i < 7; i++) {
     joint_handles_[i].setCommand(command[i]);
   }
   if (publish_ros_)
@@ -193,24 +141,10 @@ Eigen::VectorXd TaskSpaceControllerBase<SI, SH>::getJointPositions() const {
 
 template<class SI, class SH>
 void TaskSpaceControllerBase<SI, SH>::publishRos() {
-  if (target_publisher_->trylock()) {
-    target_publisher_->msg_.header.stamp = ros::Time::now();
-    target_publisher_->msg_.header.frame_id = "world";
-    target_publisher_->msg_.pose.position.x = target_pose_.translation()(0);
-    target_publisher_->msg_.pose.position.y = target_pose_.translation()(1);
-    target_publisher_->msg_.pose.position.z = target_pose_.translation()(2);
-    Eigen::Quaterniond q(target_pose_.rotation());
-    target_publisher_->msg_.pose.orientation.x = q.x();
-    target_publisher_->msg_.pose.orientation.y = q.y();
-    target_publisher_->msg_.pose.orientation.z = q.z();
-    target_publisher_->msg_.pose.orientation.w = q.w();
-    target_publisher_->unlockAndPublish();
-  }
-
   if (pose_publisher_->trylock()){
     current_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
     pose_publisher_->msg_.header.stamp = ros::Time::now();
-    pose_publisher_->msg_.header.frame_id = "world";
+    pose_publisher_->msg_.header.frame_id = frame_id_;
     pose_publisher_->msg_.pose.position.x = current_pose_.translation()(0);
     pose_publisher_->msg_.pose.position.y = current_pose_.translation()(1);
     pose_publisher_->msg_.pose.position.z = current_pose_.translation()(2);
