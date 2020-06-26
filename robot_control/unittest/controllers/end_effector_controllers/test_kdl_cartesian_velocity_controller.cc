@@ -29,7 +29,7 @@ TEST_F(CartesianVelocityTest, validCommand)
     q_in.resize(ctrl.getNumJoints());
     q_in << 0.0, -M_PI / 4.0, 0.0, -3.0 * M_PI / 4.0, 0.0, M_PI / 2.0, M_PI / 4.0;
     auto cmd = ctrl.computeCommand(velocity_translation, velocity_rotation, q_in);
-    ASSERT_GE(cmd.norm(), 0.0);
+    ASSERT_GT(cmd.norm(), 0.0);
 }
 
 TEST_F(CartesianVelocityTest, zeroCommand)
