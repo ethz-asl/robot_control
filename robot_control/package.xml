@@ -10,5 +10,7 @@
   <depend>pybind11_catkin</depend>
   <depend>pinocchio</depend>
   <depend>eigen</depend>
+  <depend>kdl_parser</depend>
+  <depend>orocos_kdl</depend>
 </package>
 

@@ -15,21 +15,21 @@
 namespace rc{
 class IKSolverKDL : public IKSolverBase{
  public:
-  IKSolverKDL() = default;
+  IKSolverKDL(const IKSolverConfig config);
   ~IKSolverKDL() = default;
 
-  bool initFromXml(const std::string& xml_string);
-  bool initFromUrdf(const std::string& urdf_path);
+ private:
+  void initSolver();
 
  protected:
-  std::optional<JointsVelocity> jointVelFromTwist(const Twist &twist) override;
-  std::optional<JointsPosition> jointPosFromPose(const Pose &pose) override;
+  std::optional<JointsVelocity> jointVelFromTwist(const Twist& twist, const JointsPosition& q_in) override;
+  std::optional<JointsPosition> jointPosFromPose(const Pose& pose) override;
 
  private:
  private:
-  KDL::Chain kdlChain;
-  unsigned int numJoints;
-  KDL::ChainIkSolverVel_pinv *ikSolver;
+  KDL::Chain kdl_chain_;
+  unsigned int num_joints_;
+  std::unique_ptr<KDL::ChainIkSolverVel_pinv> ik_solver_;
 };
 
 }

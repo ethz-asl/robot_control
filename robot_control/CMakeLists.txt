@@ -1,23 +1,29 @@
 cmake_minimum_required(VERSION 3.10)
 project(robot_control)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 option(CATKIN_BUILD "Unset if building for python 3 through setup.py." ON)
 
 find_package(Eigen3 REQUIRED 3.3)
 find_package(pinocchio REQUIRED)
 find_package(PythonInterp REQUIRED)
+find_package(kdl_parser REQUIRED)
+find_package(orocos_kdl REQUIRED)
 
 if (CATKIN_BUILD)
   message(STATUS "Building with catkin.")
-  find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
+  find_package(catkin REQUIRED COMPONENTS pybind11_catkin  kdl_parser orocos_kdl)
   catkin_package(LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS pybind11_catkin)
 endif()
 
 add_subdirectory(submodules/pybind11)
 
-set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES})
-set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+set(COMMON_LIBRARIES ${PYTHON_LIBRARIES} ${PINOCCHIO_LIBRARIES}  ${BOOST_LIBRARIES})
+set(SYSTEM_INCLUDE_DIRECTORIES ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}  ${BOOST_INLCUDE_DIRS})
 
 if(CATKIN_BUILD)
   set(SYSTEM_INCLUDE_DIRECTORIES ${catkin_INCLUDE_DIRS} ${SYSTEM_INCLUDE_DIRECTORIES})
@@ -28,6 +34,7 @@ include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
 add_library(${PROJECT_NAME}
   src/modeling/robot_wrapper.cc
+  src/optimization/ik_kdl.cpp
   src/controllers/end_effector_controllers/task_space_controller.cc)
 target_link_libraries(${PROJECT_NAME}  ${PINOCCHIO_LIBRARIES} ${catkin_LIBRAIRES})
 
@@ -45,7 +52,7 @@ add_dependencies(rc ${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
 ### Testing
 if (CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(test_math unittest/math.cpp)
+  catkin_add_gtest(test_math unittest/math/math.cpp)
 endif()
 
 if(TARGET test_math)

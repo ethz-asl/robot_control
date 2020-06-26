@@ -13,13 +13,24 @@
 
 namespace rc{
 
+struct IKSolverConfig{
+  std::string xml_string;
+  std::string urdf_file;
+  std::string root_link;
+  std::string tip_link;
+
+  double accuracy = 1e-9;
+};
+
 class IKSolverBase{
  public:
   IKSolverBase() = delete;
+  IKSolverBase(const IKSolverConfig config) : config_(config){};
   ~IKSolverBase() = default;
 
  protected:
-  virtual std::optional<JointsVelocity> jointVelFromTwist(const Twist& twist) = 0;
+  IKSolverConfig config_;
+  virtual std::optional<JointsVelocity> jointVelFromTwist(const Twist& twist, const JointsPosition& q_in) = 0;
   virtual std::optional<JointsPosition> jointPosFromPose(const Pose& pose) = 0;
 };
 
