@@ -1,6 +1,10 @@
 ### robot_control 
 [![Build Status](https://jenkins.asl.ethz.ch/buildStatus/icon?job=robot_control)](https://jenkins.asl.ethz.ch/job/robot_control/)
 
+### Dependencies
+
+ros-noetic-pybind11-catkin
+
 ### Installation
 
 Install the `pinocchio` library following the [instructions](https://stack-of-tasks.github.io/pinocchio/download.html) from the official documentation.

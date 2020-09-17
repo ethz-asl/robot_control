@@ -5,7 +5,7 @@ option(CATKIN_BUILD "Unset if building for python 3 through setup.py." ON)
 
 find_package(Eigen3 REQUIRED 3.3)
 find_package(pinocchio REQUIRED)
-find_package(PythonInterp REQUIRED)
+find_package(PythonInterp 3 REQUIRED)
 find_package(kdl_parser REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
