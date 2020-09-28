@@ -14,7 +14,8 @@ from visualization_msgs.msg import *
 
 class SingleMarkerBroadcaster:
     def __init__(self):
-        self.server = InteractiveMarkerServer("interactive_marker")
+        server_name = rospy.get_param("~marker_server_name", "interactive_marker")
+        self.server = InteractiveMarkerServer(server_name)
         self.initial_pose = PoseStamped()
         self.pose = PoseStamped()
 
