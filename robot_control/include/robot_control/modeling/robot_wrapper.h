@@ -6,6 +6,7 @@
 #include "pinocchio/algorithm/model.hpp"
 #include "pinocchio/multibody/data.hpp"
 #include "pinocchio/spatial/motion.hpp"
+#include "pinocchio/algorithm/joint-configuration.hpp"
 
 namespace pin = pinocchio;
 using namespace Eigen;
@@ -47,6 +48,9 @@ class RobotWrapper {
   // Changing state
   void updateState(const VectorXd& new_q, const VectorXd& new_v, bool update_kinematics = true);
   void computeAllTerms();
+
+  inline void integrateQ(VectorXd& curr_q, const VectorXd& curr_v, double dt){
+    curr_q = pin::integrate(model, curr_q, curr_v*dt);}
 };
 }
 

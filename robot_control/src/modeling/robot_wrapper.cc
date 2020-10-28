@@ -77,10 +77,12 @@ MatrixXd RobotWrapper::getJointJacobian(std::string& joint_name) {
 
 MatrixXd RobotWrapper::getFrameJacobian(std::string& frame_name) {
   Matrix<double, 6, Dynamic> J(6, model.nv);
+  std::cout << "In getFrameJacobian: J=" << J << std::endl;
   auto frame_id = model.getFrameId(frame_name);
   pin::computeJointJacobians(model, data, q);
   pin::updateFramePlacements(model, data);
   pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL, J);
+  std::cout << "In getFrameJacobian: J (after computation)=" << J << std::endl;
   return J;
 }
 

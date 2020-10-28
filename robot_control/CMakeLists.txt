@@ -31,7 +31,9 @@ add_library(${PROJECT_NAME}
   src/math/math.cpp
   src/utils/timer.cc
   src/modeling/robot_wrapper.cc
-  src/controllers/end_effector_controllers/task_space_controller.cc)
+  src/controllers/end_effector_controllers/task_space_controller.cc
+  src/controllers/end_effector_controllers/ik_controller.cpp)
+
 target_link_libraries(${PROJECT_NAME}  ${PINOCCHIO_LIBRARIES} ${catkin_LIBRAIRES})
 
 set(SOURCE_BINDINGS_FILES bindings/robot_control.cc)
