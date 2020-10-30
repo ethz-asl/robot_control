@@ -2,6 +2,7 @@
 <launch>
 
   <!-- Load robot description -->
+  <arg name="rviz" default="true"/>
   <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/panda/panda.urdf.xacro"/>
   <param name="robot_description"
          command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/>
@@ -20,6 +21,6 @@
 
   <!-- Open Rviz -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_control_assets)/rviz/cfg.rviz"
-  output="screen"/>
+  output="screen" if="$(arg rviz)"/>
 
 </launch>

@@ -12,6 +12,7 @@
 #include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainiksolvervel_pinv_nso.hpp>
+#include <kdl/chainiksolvervel_pinv.hpp>
 
 #include <Eigen/Core>
 
@@ -35,7 +36,14 @@ class IKNullSpaceController_KDL
                          const VectorXd& q_nullspace_weights);
   
   VectorXd computeCommand(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0);
+  void forwardKinematics(const VectorXd& q, Matrix3d& rot, Vector3d& pos);
+  void setJointLimits(const VectorXd& lower, const VectorXd& upper);
+  void setJointLimitsFromUrdf(const std::string &xml_string, const std::vector<std::string>& joint_names);
+
   unsigned int getNumJoints() { return kdlChain.getNrOfJoints(); }
+
+  IKNullSpaceController_KDL() = delete;
+  IKNullSpaceController_KDL(bool v=false) : verbose(v){};
   ~IKNullSpaceController_KDL(){
     delete ikVelSolver;
     delete fkPosSolver;
@@ -48,6 +56,8 @@ class IKNullSpaceController_KDL
              const std::string &tip_link,
              const VectorXd& q_nullspace,
              const VectorXd& q_nullspace_weights);
+
+  bool verbose;
 
   KDL::Chain kdlChain;
   unsigned int numJoints;

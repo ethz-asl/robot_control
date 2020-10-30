@@ -4,6 +4,8 @@ project(robot_control_ros)
 find_package(Eigen3 3.3 REQUIRED)
 find_package(Franka REQUIRED)
 find_package(pinocchio REQUIRED)
+find_package(kdl_parser REQUIRED)
+find_package(orocos_kdl REQUIRED)
 
 set(PROJECT_DEPENDENCIES
   robot_control
@@ -45,6 +47,6 @@ install(TARGETS rc_ros
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
   )
 
-install(FILES plugin.xml
+install(FILES plugins.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 

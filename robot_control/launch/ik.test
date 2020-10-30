@@ -1,0 +1,4 @@
+<launch>
+    <param name="robot_description" command="$(find xacro)/xacro $(find franka_description)/robots/panda_arm_hand.urdf.xacro"/>
+    <test test-name="test_ik_velocity" pkg="robot_control" type="test_ik" />
+</launch>

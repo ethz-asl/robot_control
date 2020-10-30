@@ -7,12 +7,27 @@
     </description>
   </class>
 
-    <class name="robot_control_ros/TaskSpaceControllerSim"
-       type="rc_ros::TaskSpaceControllerSim"
-       base_class_type="controller_interface::ControllerBase">
+  <class name="robot_control_ros/TaskSpaceControllerSim"
+         type="rc_ros::TaskSpaceControllerSim"
+         base_class_type="controller_interface::ControllerBase">
     <description>
         Keeps the end effector in the current position.
     </description>
   </class>
 
+  <class name="robot_control_ros/IKController"
+         type="rc_ros::IKController"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+      IK based controller
+    </description>
+  </class>
+
+  <class name="robot_control_ros/IKControllerSim"
+         type="rc_ros::IKControllerSim"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+      IK based controller for simulated robot.
+    </description>
+  </class>
 </library>

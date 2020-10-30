@@ -12,5 +12,8 @@
   <depend>eigen</depend>
   <depend>kdl_parser</depend>
   <depend>orocos_kdl</depend>
+  <depend>angles</depend>
+  <depend>joint_limits_interface</depend>
+  <depend>urdf</depend>
 </package>
 
