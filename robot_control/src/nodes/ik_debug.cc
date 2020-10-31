@@ -16,7 +16,7 @@
 #include <Eigen/Geometry>
 #include "robot_control/controllers/end_effector_controllers/kdl_ik_ns_controller.h"
 
-#define DEFAULT_CONFIGURATION 0.0, -0.473, 0.10720, -1.937, -0.1610, 1.48333, 0.75098
+#define DEFAULT_CONFIGURATION -0.18, 0.30, 0.31, 1.15, -0.27, 1.25, -1.17//0.0, 0.26, 3.14, -2.27, 0.0, 0.96, 1.57
 
 class IKDebug{
  private:
@@ -32,6 +32,7 @@ class IKDebug{
   std::mutex target_mutex, solution_mutex;
   geometry_msgs::PoseStamped target;
   Eigen::VectorXd solution;
+  Eigen::VectorXd q_guess;
 
  public:
   IKDebug() = delete;
@@ -45,17 +46,21 @@ class IKDebug{
     VectorXd q_nullspace(7), q_nullspace_weights(7);
     q_nullspace << DEFAULT_CONFIGURATION;
     q_nullspace_weights.setConstant(1.0);
-    ctrl.initFromXmlString(robot_description, "panda_link0", "panda_hand", q_nullspace, q_nullspace_weights);
+    ctrl.initFromXmlString(robot_description, "base_link", "end_effector_link");
+    ctrl.setNullspaceConfiguration(q_nullspace);
+    ctrl.setNullspaceWeights(q_nullspace_weights);
 
-    jointStateSolver.name = {"panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
-                             "panda_joint5", "panda_joint6", "panda_joint7",
-                             "panda_finger_joint1", "panda_finger_joint2"};
-    jointStateSolver.position.resize(9, 0.0);
+    jointStateSolver.name = {"joint_1", "joint_2", "joint_3", "joint_4",
+                             "joint_5", "joint_6", "joint_7",};
+    jointStateSolver.position.resize(7, 0.0);
     solution.setZero(ctrl.getNumJoints());
     for(size_t i=0; i<ctrl.getNumJoints(); i++){
       jointStateSolver.position[i] = q_nullspace(i);
       solution(i) = q_nullspace(i);
     }
+
+    q_guess.setZero(ctrl.getNumJoints());
+    q_guess << DEFAULT_CONFIGURATION;
 
     ctrl.setJointLimitsFromUrdf(robot_description, jointStateSolver.name);
   }
@@ -67,8 +72,6 @@ class IKDebug{
 
   bool solve( std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res){
     VectorXd q_out(ctrl.getNumJoints());
-    VectorXd q_guess(ctrl.getNumJoints());
-    q_guess << DEFAULT_CONFIGURATION;
     std::cout << "Num of joints is: " << ctrl.getNumJoints() << std::endl;
     std::cout << "Configuration guess is: " << q_guess.transpose() << std::endl;
 
@@ -85,6 +88,8 @@ class IKDebug{
     Matrix3d rot_out;
 
     q_out = ctrl.computeCommand(rot_in, pos_in, q_guess);
+    // reuse last solution as new guess
+    q_guess = q_out;
     std::cout << "Computing the forward kinematics." << std::endl;
     ctrl.forwardKinematics(q_out, rot_out, pos_out);
 

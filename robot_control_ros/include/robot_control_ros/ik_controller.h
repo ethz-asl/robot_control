@@ -31,13 +31,13 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
     hardware_interface::EffortJointInterface,
     StateInterface> {
  public:
-  int END_EFFECTOR_INDEX = 6;
 
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
   void newTargetCallback(const geometry_msgs::PoseStamped&);
+  void updateCommand();
 
   void starting(const ros::Time&) override;
-  void update(const ros::Time&, const ros::Duration& period) override;
+  virtual void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
 
   virtual bool addStateHandles(hardware_interface::RobotHW*) {};
@@ -48,32 +48,34 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   bool setTargetCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
 
  protected:
+  int nr_chain_joints_;
   std::shared_ptr<rc::RobotWrapper> robot_wrapper;
   std::shared_ptr<rc::IKNullSpaceController_KDL> controller;
 
-  std::vector<hardware_interface::JointStateHandle> state_handles_;
+  std::vector<std::string> joint_names_;
   std::vector<hardware_interface::JointHandle> joint_handles_;
+  std::vector<hardware_interface::JointStateHandle> state_handles_;
 
-  std::vector<std::string> joint_names_{"panda_joint1",
-                                 "panda_joint2", "panda_joint3", "panda_joint4", "panda_joint5",
-                                 "panda_joint6", "panda_joint7"};
+  bool debug_;
+  std::mutex target_mutex_;
+  pin::SE3 target_pose_;
+  pin::SE3 current_pose_;
 
   std::string frame_id_ = "world";
   std::string controlled_frame_;
-  pin::SE3 target_pose_;
-  pin::SE3 current_pose_;
   Eigen::VectorXd command_;
-  std::mutex target_mutex_;
   Eigen::VectorXd Kp_, Kd_;
   Eigen::VectorXd q_current_, qd_current_, q_desired_;
+  Eigen::VectorXd q_nullspace_;
+
   bool publish_ros_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> pose_publisher_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> target_publisher_;
   ros::Subscriber target_subscriber_;
-  ros::ServiceServer set_target_service_;
+
 };
 
-class IKController : public IKControllerBase<franka_hw::FrankaStateInterface, franka_hw::FrankaStateHandle> {
+class IKControllerPanda : public IKControllerBase<franka_hw::FrankaStateInterface, franka_hw::FrankaStateHandle> {
   bool addStateHandles(hardware_interface::RobotHW*);
 };
 

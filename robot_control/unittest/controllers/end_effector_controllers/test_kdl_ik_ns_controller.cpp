@@ -35,7 +35,11 @@ TEST_F(IKNullSpaceControllerTest, validCommand)
   q_nullspace << DEFAULT_CONFIGURATION;
   q_nullspace_weights.setConstant(1.0);
 
-  ctrl.initFromXmlString(robot_description, "panda_link0", "panda_hand", q_nullspace, q_nullspace_weights);
+  ctrl.initFromXmlString(robot_description, "panda_link0", "panda_hand");
+  ctrl.setNullspaceConfiguration(q_nullspace);
+  ctrl.setNullspaceWeights(q_nullspace_weights);
+  ctrl.setJointLimitsFromUrdf(robot_description, {"panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                                                  "panda_joint5", "panda_joint6", "panda_joint7"});
 
   const std::vector<std::pair<Matrix3d, Vector3d>> poses_test{
       {Matrix3d(Quaterniond(-0.2017, 0.6923, -0.3507, 0.5976)), Vector3d(-0.2632, -0.084, 0.0738)},

@@ -8,7 +8,6 @@
 
 #include "robot_control/controllers/end_effector_controllers/kdl_ik_ns_controller.h"
 #include <Eigen/Geometry>
-#include <angles/angles.h>
 #include <urdf/model.h>
 
 #include <joint_limits_interface/joint_limits.h>
@@ -23,9 +22,7 @@ namespace rc
 {
 void IKNullSpaceController_KDL::initFromUrdfFile(const std::string &urdf_file, 
                                                  const std::string &root_link, 
-                                                 const std::string &tip_link,
-                                                 const VectorXd& q_nullspace, 
-                                                 const VectorXd& q_nullspace_weights)
+                                                 const std::string &tip_link)
 {
   KDL::Tree kdlTree;
   if (!kdl_parser::treeFromFile(urdf_file, kdlTree))
@@ -33,14 +30,12 @@ void IKNullSpaceController_KDL::initFromUrdfFile(const std::string &urdf_file,
     throw std::invalid_argument("Failed to load URDF");
   }
 
-  setup(kdlTree, root_link, tip_link, q_nullspace, q_nullspace_weights);
+  setup(kdlTree, root_link, tip_link);
 }
 
 void IKNullSpaceController_KDL::initFromXmlString(const std::string &xml_string, 
                                                   const std::string &root_link, 
-                                                  const std::string &tip_link,
-                                                  const VectorXd& q_nullspace,
-                                                  const VectorXd& q_nullspace_weights)
+                                                  const std::string &tip_link)
 {
   KDL::Tree kdlTree;
   if (!kdl_parser::treeFromString(xml_string, kdlTree))
@@ -48,7 +43,7 @@ void IKNullSpaceController_KDL::initFromXmlString(const std::string &xml_string,
     throw std::invalid_argument("Failed to load URDF");
   }
 
-  setup(kdlTree, root_link, tip_link, q_nullspace, q_nullspace_weights);
+  setup(kdlTree, root_link, tip_link);
 }
 
 void IKNullSpaceController_KDL::setJointLimitsFromUrdf(const std::string &xml_string,
@@ -77,15 +72,39 @@ void IKNullSpaceController_KDL::setJointLimitsFromUrdf(const std::string &xml_st
 
   std::cout << "Setting up joint limits:" << std::endl <<
                                              "upper: " << upper.transpose() << std::endl <<
-                                             "lower: " << lower.transpose();
+                                             "lower: " << lower.transpose() << std::endl;
   setJointLimits(lower, upper);
+}
+
+void IKNullSpaceController_KDL::setNullspaceConfiguration(const VectorXd& q_nullspace){
+  if (q_nullspace.size() != numJoints){
+    std::cout << "Failed to set the nullspace configuration. Wrong size: " << std::endl;
+    return;
+  }
+
+  for (size_t i=0; i<numJoints; i++){
+    qNullspace(i) = q_nullspace(i);
+  }
+  ikVelSolver->setOptPos(qNullspace);
+  ikPosSolver = new KDL::ChainIkSolverPos_NR_JL(kdlChain, *fkPosSolver, *ikVelSolver, maxIter, eps);
+}
+
+void IKNullSpaceController_KDL::setNullspaceWeights(const VectorXd& q_nullspace_weights){
+  if (q_nullspace_weights.size() != numJoints){
+    std::cout << "Failed to set the nullspace weights. Wrong size." << std::endl;
+    return;
+  }
+
+  for (size_t i=0; i<numJoints; i++){
+    qNullspaceWeights(i) = q_nullspace_weights(i);
+  }
+  ikVelSolver->setWeights(qNullspaceWeights);
+  ikPosSolver = new KDL::ChainIkSolverPos_NR_JL(kdlChain, *fkPosSolver, *ikVelSolver, maxIter, eps);
 }
 
 void IKNullSpaceController_KDL::setup(const KDL::Tree &kdlTree, 
                                       const std::string &root_link, 
-                                      const std::string &tip_link,
-                                      const VectorXd& q_nullspace,
-                                      const VectorXd& q_nullspace_weights)
+                                      const std::string &tip_link)
 {
   if (!kdlTree.getChain(root_link, tip_link, kdlChain))
   {
@@ -97,27 +116,17 @@ void IKNullSpaceController_KDL::setup(const KDL::Tree &kdlTree,
   qNullspace = KDL::JntArray(numJoints);
   qNullspaceWeights = KDL::JntArray(numJoints);
 
-  if (q_nullspace.size() != numJoints){
-    throw std::runtime_error("nullspace configuration has size != num of joints");
-  }
-
-  if (q_nullspace_weights.size() != numJoints){
-    throw std::runtime_error("nullspace weights have size != num of joints");
-  }
-
-  for (size_t i=0; i<numJoints; i++){
-    qNullspace(i) = q_nullspace(i);
-    qNullspaceWeights(i) = q_nullspace_weights(i);
-  }
-
   fkPosSolver = new KDL::ChainFkSolverPos_recursive(kdlChain);
-  double eps_ikvel = 0.001; //0.00001;
-  int maxiter_ikvel = 1000; //150;
-  ikVelSolver = new KDL::ChainIkSolverVel_pinv_nso(kdlChain, qNullspace, qNullspaceWeights, eps_ikvel, maxiter_ikvel);
 
-  int maxIter = 10000;
-  double eps = 1e-3;
+  double eps_ikvel = 0.001; //0.00001;
+  int maxiter_ikvel = 150; //150;
+  ikVelSolver = new KDL::ChainIkSolverVel_pinv_nso(kdlChain, eps_ikvel, maxiter_ikvel);
   ikPosSolver = new KDL::ChainIkSolverPos_NR_JL(kdlChain, *fkPosSolver, *ikVelSolver, maxIter, eps);
+
+  // solver without joint limits
+  ikVelSolver2 = new KDL::ChainIkSolverVel_pinv(kdlChain);
+  ikPosSolver2 = new KDL::ChainIkSolverPos_NR(kdlChain, *fkPosSolver, *ikVelSolver);
+
 }
 
 void IKNullSpaceController_KDL::setJointLimits(const VectorXd& lower, const VectorXd& upper){
@@ -151,22 +160,52 @@ VectorXd IKNullSpaceController_KDL::computeCommand(const Matrix3d& rot, const Ve
     std::cout << "IK return code: " << ikPosSolver->strError(return_code) << std::endl;
   }
 
+  if (return_code == ikPosSolver->E_MAX_ITERATIONS_EXCEEDED ||
+      return_code == ikPosSolver->E_FKSOLVERPOS_FAILED ||
+      return_code == ikPosSolver->E_IKSOLVERVEL_FAILED) {
+    return q0;
+  }
+
   VectorXd res;
   res.resize(numJoints);
   for (int i = 0; i < numJoints; i++)
   {
-    res(i) = angles::normalize_angle(q_out(i));
+    res(i) = q_out(i);
+  }
+  return res;
+}
+
+VectorXd IKNullSpaceController_KDL::computeCommand2(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0)
+{
+  KDL::Frame pose_desired;
+  pose_desired.M = KDL::Rotation(rot(0, 0), rot(0, 1), rot(0, 2),
+                                 rot(1, 0), rot(1, 1), rot(1, 2),
+                                 rot(2, 0), rot(2, 1), rot(2, 2));
+  pose_desired.p = KDL::Vector(pos(0), pos(1), pos(2));
+
+  KDL::JntArray q_init(numJoints);
+  for (int i = 0; i < numJoints; i++)
+  {
+    q_init(i) = q0(i);
   }
 
-  // position check
-  Matrix3d rot_out;
-  Vector3d pos_out;
-  forwardKinematics(res, rot_out, pos_out);
-  if ((pos_out - pos).norm() > THRESHOLD_FK){
-    std::cout << "IK Failed" << std::endl;
-    res = q0;
+  KDL::JntArray q_out(numJoints);
+  int return_code = ikPosSolver2->CartToJnt(q_init, pose_desired, q_out);
+  if (verbose) {
+    std::cout << "IK return code: " << ikPosSolver2->strError(return_code) << std::endl;
   }
 
+  if (return_code == ikPosSolver2->E_MAX_ITERATIONS_EXCEEDED ||
+      return_code == ikPosSolver2->E_FKSOLVERPOS_FAILED) {
+    return q0;
+  }
+
+  VectorXd res;
+  res.resize(numJoints);
+  for (int i = 0; i < numJoints; i++)
+  {
+    res(i) = q_out(i);
+  }
   return res;
 }
 

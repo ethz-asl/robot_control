@@ -15,8 +15,8 @@
     </description>
   </class>
 
-  <class name="robot_control_ros/IKController"
-         type="rc_ros::IKController"
+  <class name="robot_control_ros/IKControllerPanda"
+         type="rc_ros::IKControllerPanda"
          base_class_type="controller_interface::ControllerBase">
     <description>
       IK based controller
