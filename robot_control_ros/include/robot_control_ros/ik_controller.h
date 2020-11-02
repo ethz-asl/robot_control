@@ -40,7 +40,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   virtual void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
 
-  virtual bool addStateHandles(hardware_interface::RobotHW*) {};
+  virtual bool addStateHandles(hardware_interface::RobotHW*);
   virtual bool addCommandHandles(hardware_interface::RobotHW*);
 
   Eigen::VectorXd getJointVelocities() const;
@@ -80,13 +80,12 @@ template <class StateInterface, class StateHandle>
 class IKControllerEffort : public IKControllerBase<StateInterface, StateHandle,
     hardware_interface::EffortJointInterface, hardware_interface::JointHandle> {};
 
-class IKControllerEffortSim : public IKControllerEffort<hardware_interface::JointStateInterface, hardware_interface::JointStateHandle> {
-  virtual bool addStateHandles(hardware_interface::RobotHW*);
-};
+class IKControllerEffortSim : public IKControllerEffort<hardware_interface::JointStateInterface,
+                                                        hardware_interface::JointStateHandle> {};
 
 // TODO(giuseppe) robot specific controllers go in their own package
 class IKControllerPanda : public IKControllerEffortSim {
-  bool addStateHandles(hardware_interface::RobotHW*) final;
+  bool addStateHandles(hardware_interface::RobotHW*) override;
 };
 
 

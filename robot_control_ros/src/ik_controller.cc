@@ -273,7 +273,6 @@ void IKControllerBase<SI, SH, CI, CH>::publishRos() {
   }
 }
 
-/// Specializations
 template<class SI, class SH, class CI, class CH>
 bool IKControllerBase<SI, SH, CI, CH>::addCommandHandles(hardware_interface::RobotHW * robot_hw) {
   auto effort_joint_interface = robot_hw->get<CI>();
@@ -287,8 +286,9 @@ bool IKControllerBase<SI, SH, CI, CH>::addCommandHandles(hardware_interface::Rob
   return true;
 }
 
-bool IKControllerEffortSim::addStateHandles(hardware_interface::RobotHW* robot_hw) {
-  auto state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
+template<class SI, class SH, class CI, class CH>
+bool IKControllerBase<SI, SH, CI, CH>::addStateHandles(hardware_interface::RobotHW* robot_hw) {
+  auto state_interface = robot_hw->get<SI>();
   if (state_interface == nullptr) {
     ROS_ERROR_STREAM("Can't get franka state interface");
     return false;
@@ -300,6 +300,7 @@ bool IKControllerEffortSim::addStateHandles(hardware_interface::RobotHW* robot_h
   return true;
 }
 
+/// Panda Specific controller
 bool IKControllerPanda::addStateHandles(hardware_interface::RobotHW* robot_hw) {
   auto state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
   if (state_interface == nullptr) {
