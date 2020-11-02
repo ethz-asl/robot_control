@@ -26,9 +26,9 @@
 
 namespace rc_ros {
 
-template<class StateInterface, class StateHandle>
+template<class StateInterface, class StateHandle, class CommandInterface, class CommandHandle>
 class IKControllerBase : public controller_interface::MultiInterfaceController<
-    hardware_interface::EffortJointInterface,
+    CommandInterface,
     StateInterface> {
  public:
 
@@ -41,6 +41,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   void publishRos();
 
   virtual bool addStateHandles(hardware_interface::RobotHW*) {};
+  virtual bool addCommandHandles(hardware_interface::RobotHW*);
 
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
@@ -53,8 +54,8 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   std::shared_ptr<rc::IKNullSpaceController_KDL> controller;
 
   std::vector<std::string> joint_names_;
-  std::vector<hardware_interface::JointHandle> joint_handles_;
-  std::vector<hardware_interface::JointStateHandle> state_handles_;
+  std::vector<CommandHandle> joint_handles_;
+  std::vector<StateHandle> state_handles_;
 
   bool debug_;
   std::mutex target_mutex_;
@@ -75,12 +76,19 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
 
 };
 
-class IKControllerPanda : public IKControllerBase<franka_hw::FrankaStateInterface, franka_hw::FrankaStateHandle> {
-  bool addStateHandles(hardware_interface::RobotHW*);
+template <class StateInterface, class StateHandle>
+class IKControllerEffort : public IKControllerBase<StateInterface, StateHandle,
+    hardware_interface::EffortJointInterface, hardware_interface::JointHandle> {};
+
+class IKControllerEffortSim : public IKControllerEffort<hardware_interface::JointStateInterface, hardware_interface::JointStateHandle> {
+  virtual bool addStateHandles(hardware_interface::RobotHW*);
 };
 
-class IKControllerSim : public IKControllerBase<hardware_interface::JointStateInterface, hardware_interface::JointStateHandle> {
-  bool addStateHandles(hardware_interface::RobotHW*);
+// TODO(giuseppe) robot specific controllers go in their own package
+class IKControllerPanda : public IKControllerEffortSim {
+  bool addStateHandles(hardware_interface::RobotHW*) final;
 };
+
+
 }
 

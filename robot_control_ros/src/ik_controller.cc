@@ -22,10 +22,10 @@
 
 namespace rc_ros {
 
-template<class StateInterface, class StateHandle>
-bool IKControllerBase<StateInterface, StateHandle>::init(hardware_interface::RobotHW* robot_hw,
-                                                         ros::NodeHandle& node_handle,
-                                                         ros::NodeHandle& ctrl_handle) {
+template<class SI, class SH, class CI, class CH>
+bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW* robot_hw,
+                                            ros::NodeHandle& node_handle,
+                                            ros::NodeHandle& ctrl_handle) {
   std::string robot_description;
   if (!node_handle.getParam("/robot_description", robot_description)) {
     ROS_ERROR_STREAM("Can't read robot description.");
@@ -150,9 +150,16 @@ bool IKControllerBase<StateInterface, StateHandle>::init(hardware_interface::Rob
   controller->setNullspaceWeights(q_nullspace_weights);
   controller->setJointLimitsFromUrdf(robot_description, joint_names_);
 
-  bool added = addStateHandles(robot_hw);
-  if (!added) {
-    return added;
+  bool state_handle_ok = addStateHandles(robot_hw);
+  if (!state_handle_ok) {
+    ROS_ERROR("Failed to add the joint state handles.");
+    return false;
+  }
+
+  bool command_handle_ok = addCommandHandles(robot_hw);
+  if (!command_handle_ok) {
+    ROS_ERROR("Failed to add the joint command handles.");
+    return false;
   }
 
   std::string current_pose_topic = ctrl_handle.param<std::string>("current_pose_topic", "/current_pose");
@@ -164,8 +171,8 @@ bool IKControllerBase<StateInterface, StateHandle>::init(hardware_interface::Rob
   return true;
 }
 
-template <class SI, class SH>
-void IKControllerBase<SI, SH>::newTargetCallback(const geometry_msgs::PoseStamped& msg) {
+template <class SI, class SH, class CI, class CH>
+void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::PoseStamped& msg) {
   std::lock_guard<std::mutex> lock(target_mutex_);
   Eigen::Vector3d translation(msg.pose.position.x,
                               msg.pose.position.y,
@@ -182,8 +189,8 @@ void IKControllerBase<SI, SH>::newTargetCallback(const geometry_msgs::PoseStampe
   if (debug_) ROS_INFO_STREAM_THROTTLE(0.5, ">>> " << q_desired_.transpose());
 }
 
-template<class SI, class SH>
-void IKControllerBase<SI, SH>::starting(const ros::Time& time) {
+template<class SI, class SH, class CI, class CH>
+void IKControllerBase<SI, SH, CI, CH>::starting(const ros::Time& time) {
   q_current_ = getJointPositions();
   q_desired_ = q_current_;
   qd_current_ = getJointVelocities();
@@ -191,8 +198,8 @@ void IKControllerBase<SI, SH>::starting(const ros::Time& time) {
   target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
 }
 
-template<class SI, class SH>
-void IKControllerBase<SI, SH>::updateCommand(){
+template<class SI, class SH, class CI, class CH>
+void IKControllerBase<SI, SH, CI, CH>::updateCommand(){
   std::lock_guard<std::mutex> lock(target_mutex_);
   q_current_ = getJointPositions();
   qd_current_ = getJointVelocities();
@@ -220,16 +227,16 @@ void IKControllerBase<SI, SH>::updateCommand(){
   }
 }
 
-template<class SI, class SH>
-void IKControllerBase<SI, SH>::update(const ros::Time& time, const ros::Duration& period) {
+template<class SI, class SH, class CI, class CH>
+void IKControllerBase<SI, SH, CI, CH>::update(const ros::Time& time, const ros::Duration& period) {
   updateCommand();
   for (size_t i=0; i < nr_chain_joints_; i++) {
     joint_handles_[i].setCommand(command_[i]);
   }
 }
 
-template<class SI, class SH>
-Eigen::VectorXd IKControllerBase<SI, SH>::getJointVelocities() const {
+template<class SI, class SH, class CI, class CH>
+Eigen::VectorXd IKControllerBase<SI, SH, CI, CH>::getJointVelocities() const {
   Eigen::VectorXd joint_velocities(robot_wrapper->getDof());
   joint_velocities.setZero();
   for(size_t i=0; i < nr_chain_joints_; i++){
@@ -238,8 +245,8 @@ Eigen::VectorXd IKControllerBase<SI, SH>::getJointVelocities() const {
   return joint_velocities;
 }
 
-template<class SI, class SH>
-Eigen::VectorXd IKControllerBase<SI, SH>::getJointPositions() const {
+template<class SI, class SH, class CI, class CH>
+Eigen::VectorXd IKControllerBase<SI, SH, CI, CH>::getJointPositions() const {
   Eigen::VectorXd joint_positions(robot_wrapper->getDof());
   joint_positions.setZero();
   for(size_t i=0; i< nr_chain_joints_; i++) {
@@ -248,8 +255,8 @@ Eigen::VectorXd IKControllerBase<SI, SH>::getJointPositions() const {
   return joint_positions;
 }
 
-template<class SI, class SH>
-void IKControllerBase<SI, SH>::publishRos() {
+template<class SI, class SH, class CI, class CH>
+void IKControllerBase<SI, SH, CI, CH>::publishRos() {
   if (pose_publisher_->trylock()){
     current_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
     pose_publisher_->msg_.header.stamp = ros::Time::now();
@@ -267,6 +274,31 @@ void IKControllerBase<SI, SH>::publishRos() {
 }
 
 /// Specializations
+template<class SI, class SH, class CI, class CH>
+bool IKControllerBase<SI, SH, CI, CH>::addCommandHandles(hardware_interface::RobotHW * robot_hw) {
+  auto effort_joint_interface = robot_hw->get<CI>();
+  if (effort_joint_interface == nullptr) {
+    ROS_ERROR_STREAM("Error getting effort joint interface.");
+    return false;
+  }
+  for (auto& joint_name : joint_names_) {
+    joint_handles_.push_back(effort_joint_interface->getHandle(joint_name));
+  }
+  return true;
+}
+
+bool IKControllerEffortSim::addStateHandles(hardware_interface::RobotHW* robot_hw) {
+  auto state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
+  if (state_interface == nullptr) {
+    ROS_ERROR_STREAM("Can't get franka state interface");
+    return false;
+  }
+
+  for (auto& joint_name : joint_names_) {
+    state_handles_.push_back(state_interface->getHandle(joint_name));
+  }
+  return true;
+}
 
 bool IKControllerPanda::addStateHandles(hardware_interface::RobotHW* robot_hw) {
   auto state_interface = robot_hw->get<franka_hw::FrankaStateInterface>();
@@ -289,37 +321,10 @@ bool IKControllerPanda::addStateHandles(hardware_interface::RobotHW* robot_hw) {
                                                                                                    &state.dq[i], &state.tau_J[i]);
     state_handles_.push_back(joint_state_handle);
   }
-
-  auto effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
-  if (effort_joint_interface == nullptr) {
-    ROS_ERROR_STREAM("Error getting effort joint interface.");
-    return false;
-  }
-  for (auto& joint_name : joint_names_) {
-    joint_handles_.push_back(effort_joint_interface->getHandle(joint_name));
-  }
   return true;
 }
 
-bool IKControllerSim::addStateHandles(hardware_interface::RobotHW* robot_hw) {
-  auto state_interface = robot_hw->get<hardware_interface::JointStateInterface>();
-  if (state_interface == nullptr) {
-    ROS_ERROR_STREAM("Can't get franka state interface");
-    return false;
-  }
-
-  auto effort_joint_interface = robot_hw->get<hardware_interface::EffortJointInterface>();
-  if (effort_joint_interface == nullptr) {
-    ROS_ERROR_STREAM("Error getting effort joint interface.");
-    return false;
-  }
-  for (auto& joint_name : joint_names_) {
-    state_handles_.push_back(state_interface->getHandle(joint_name));
-    joint_handles_.push_back(effort_joint_interface->getHandle(joint_name));
-  }
-  return true;
-}
 }
 
 PLUGINLIB_EXPORT_CLASS(rc_ros::IKControllerPanda, controller_interface::ControllerBase)
-PLUGINLIB_EXPORT_CLASS(rc_ros::IKControllerSim, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(rc_ros::IKControllerEffortSim, controller_interface::ControllerBase)

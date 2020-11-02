@@ -81,7 +81,7 @@ ik_controller_panda:
   end_effector_link: panda_hand
 
 ik_controller_sim_panda:
-  type: "robot_control_ros/IKControllerSim"
+  type: "robot_control_ros/IKControllerEffortSim"
   target_pose_topic: "/target_pose"
   current_pose_topic: "/current_pose"
   publish_ros: true
@@ -101,7 +101,7 @@ ik_controller_sim_panda:
   end_effector_link: panda_hand
 
 ik_controller_sim_kinova3:
-  type: "robot_control_ros/IKControllerSim"
+  type: "robot_control_ros/IKControllerEffortSim"
   target_pose_topic: "/target_pose"
   current_pose_topic: "/current_pose"
   publish_ros: true
