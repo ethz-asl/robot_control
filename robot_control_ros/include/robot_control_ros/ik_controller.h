@@ -19,6 +19,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <realtime_tools/realtime_publisher.h>
 #include <std_srvs/Empty.h>
+#include <sensor_msgs/JointState.h>
 
 #include <franka_hw/franka_state_interface.h>
 
@@ -33,10 +34,12 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
  public:
 
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
+  void starting(const ros::Time&) override;
+  virtual void stopping(const ros::Time& /*time*/) {};
+
   void newTargetCallback(const geometry_msgs::PoseStamped&);
   void updateCommand();
 
-  void starting(const ros::Time&) override;
   virtual void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
 
@@ -66,15 +69,22 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   std::string controlled_frame_;
   Eigen::VectorXd command_;
   Eigen::VectorXd Kp_, Kd_;
-  Eigen::VectorXd q_current_, qd_current_, q_desired_;
+  Eigen::VectorXd q_;
+  Eigen::VectorXd qd_;
+  Eigen::VectorXd q_desired_;
   Eigen::VectorXd q_nullspace_;
 
   bool publish_ros_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> pose_publisher_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> target_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState>> q_desired_publisher_;
+
   ros::Subscriber target_subscriber_;
 
+  Eigen::VectorXd lower_limit_;
+  Eigen::VectorXd upper_limit_;
 };
+
 
 template <class StateInterface, class StateHandle>
 class IKControllerEffort : public IKControllerBase<StateInterface, StateHandle,
@@ -91,3 +101,4 @@ class IKControllerPanda : public IKControllerEffortSim {
 
 }
 
+#include <robot_control_ros/impl/ik_controller_impl.h>

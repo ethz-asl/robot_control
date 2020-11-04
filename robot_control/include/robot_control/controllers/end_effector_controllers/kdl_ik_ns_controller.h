@@ -32,7 +32,9 @@ class IKNullSpaceController_KDL
                          const std::string &root_link, 
                          const std::string &tip_link);
   
+  VectorXd computeCommand(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0, std::string& msg);
   VectorXd computeCommand(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0);
+
   VectorXd computeCommand2(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0);
 
   void forwardKinematics(const VectorXd& q, Matrix3d& rot, Vector3d& pos);

@@ -140,7 +140,7 @@ void IKNullSpaceController_KDL::setJointLimits(const VectorXd& lower, const Vect
   if (verbose) { std::cout << ikPosSolver->strError(ret) << std::endl;}
 }
 
-VectorXd IKNullSpaceController_KDL::computeCommand(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0)
+VectorXd IKNullSpaceController_KDL::computeCommand(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0, std::string& msg)
 {
   KDL::Frame pose_desired;
   pose_desired.M = KDL::Rotation(rot(0, 0), rot(0, 1), rot(0, 2),
@@ -163,6 +163,7 @@ VectorXd IKNullSpaceController_KDL::computeCommand(const Matrix3d& rot, const Ve
   if (return_code == ikPosSolver->E_MAX_ITERATIONS_EXCEEDED ||
       return_code == ikPosSolver->E_FKSOLVERPOS_FAILED ||
       return_code == ikPosSolver->E_IKSOLVERVEL_FAILED) {
+    msg = ikPosSolver->strError(return_code);
     return q0;
   }
 
@@ -173,6 +174,11 @@ VectorXd IKNullSpaceController_KDL::computeCommand(const Matrix3d& rot, const Ve
     res(i) = q_out(i);
   }
   return res;
+}
+
+VectorXd IKNullSpaceController_KDL::computeCommand(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0){
+  std::string msg{""};
+  return computeCommand(rot, pos, q0, msg);
 }
 
 VectorXd IKNullSpaceController_KDL::computeCommand2(const Matrix3d& rot, const Vector3d& pos, const VectorXd& q0)

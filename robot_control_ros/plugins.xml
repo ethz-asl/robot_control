@@ -1,4 +1,4 @@
-<library path="lib/librc_ros">
+<library path="lib/librobot_control_ros">
   <class name="robot_control_ros/TaskSpaceController"
          type="rc_ros::TaskSpaceController"
          base_class_type="controller_interface::ControllerBase">
