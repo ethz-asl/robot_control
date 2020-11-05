@@ -33,6 +33,7 @@ include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 add_library(${PROJECT_NAME}
   src/math/math.cpp
   src/utils/timer.cc
+  src/utils/trajectory_generator.cc
   src/modeling/robot_wrapper.cc
   src/controllers/end_effector_controllers/task_space_controller.cc
   src/controllers/end_effector_controllers/kdl_ik_ns_controller.cpp
@@ -63,6 +64,10 @@ if (CATKIN_ENABLE_TESTING)
   #catkin_add_gtest(test_cartesian
   #        unittest/controllers/end_effector_controllers/test_kdl_cartesian_velocity_controller.cc)
   #target_link_libraries(test_cartesian ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+  catkin_add_gtest(test_traj_gen
+          unittest/utils/test_trajectyory_generator.cpp)
+  target_link_libraries(test_traj_gen ${PROJECT_NAME} ${catkin_LIBRARIES})
 
   catkin_add_gtest(test_ik
           unittest/controllers/end_effector_controllers/test_kdl_ik_ns_controller.cpp)

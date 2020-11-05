@@ -24,6 +24,7 @@
 #include <franka_hw/franka_state_interface.h>
 
 #include <interactive_markers/interactive_marker_server.h>
+#include <robot_control/utils/trajectory_generator.h>
 
 namespace rc_ros {
 
@@ -39,6 +40,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
 
   void newTargetCallback(const geometry_msgs::PoseStamped&);
   void updateCommand();
+  void timeTrajectory();
 
   virtual void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
@@ -67,7 +69,9 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
 
   std::string frame_id_ = "world";
   std::string controlled_frame_;
-  Eigen::VectorXd command_;
+  Eigen::VectorXd eff_command_;
+  Eigen::VectorXd pos_command_;
+
   Eigen::VectorXd Kp_, Kd_;
   Eigen::VectorXd q_;
   Eigen::VectorXd qd_;
@@ -83,6 +87,10 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
 
   Eigen::VectorXd lower_limit_;
   Eigen::VectorXd upper_limit_;
+
+  Eigen::VectorXd q_err_;
+  Eigen::VectorXd q_next_;
+  std::unique_ptr<rc::TrajectoryGenerator> generator_;
 };
 
 

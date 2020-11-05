@@ -74,7 +74,8 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
   controller = std::make_shared<rc::IKNullSpaceController_KDL>(verbose);
   controller->initFromXmlString(robot_description, root_link, ee_link);
   nr_chain_joints_ = controller->getNumJoints();
-  command_.setZero(nr_chain_joints_);
+  eff_command_.setZero(nr_chain_joints_);
+  pos_command_.setZero(nr_chain_joints_);
 
   if (!ctrl_handle.getParam("joint_names", joint_names_)) {
     ROS_ERROR_STREAM("Set the joint_names parameter.");
@@ -196,6 +197,21 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
     return false;
   }
 
+  double max_velocity;
+  if (!ctrl_handle.getParam("max_velocity", max_velocity)) {
+    ROS_ERROR_STREAM("Max velocity is not set.");
+    return false;
+  }
+
+  double max_acceleration;
+  if (!ctrl_handle.getParam("max_acceleration", max_acceleration)) {
+    ROS_ERROR_STREAM("Max acceleration is not set.");
+    return false;
+  }
+  generator_ = std::make_unique<rc::TrajectoryGenerator>(max_velocity, max_acceleration, (unsigned int)nr_chain_joints_);
+
+  ROS_INFO_STREAM("Trajectory profile with v max = " << max_velocity << " and a max = " << max_acceleration);
+
   std::string current_pose_topic = ctrl_handle.param<std::string>("current_pose_topic", "/current_pose");
   pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle,
                                                                                                     current_pose_topic,
@@ -209,7 +225,9 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
 
   std::string target_pose_topic = ctrl_handle.param<std::string>("target_pose_topic", "/target_pose");
   target_subscriber_ = node_handle.subscribe("/target_pose", 10, &IKControllerBase::newTargetCallback, this);
+  q_err_ = Eigen::VectorXd(nr_chain_joints_);
 
+  ROS_INFO("IK controller initialized");
   return true;
 }
 
@@ -228,11 +246,20 @@ void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::Po
   Eigen::VectorXd q_desired = controller->computeCommand(target_pose_.rotation(),
                                           target_pose_.translation(),
                                           q_, error);
+
+  // the next desired point is the closest within the limits
+  double delta = 0;
+  for (size_t i=0; i<nr_chain_joints_; i++){
+    angles::shortest_angular_distance_with_large_limits(q_(i), q_desired(i), lower_limit_(i), upper_limit_(i), delta);
+    q_desired(i) = q_(i) + delta;
+  }
+
   if (!error.empty()) ROS_ERROR_STREAM_THROTTLE(1.0, "IK failed: " << error);
 
   {
     std::lock_guard<std::mutex> lock(target_mutex_);
     q_desired_ = q_desired;
+    timeTrajectory();
   }
   
 
@@ -246,6 +273,19 @@ void IKControllerBase<SI, SH, CI, CH>::starting(const ros::Time &time) {
   qd_ = getJointVelocities();
   robot_wrapper->updateState(q_, qd_, true);
   target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
+
+  // init first trajectory
+  generator_->compute(q_, q_desired_, time.toSec());
+
+}
+
+template<class SI, class SH, class CI, class CH>
+void IKControllerBase<SI, SH, CI, CH>::timeTrajectory() {
+  double current_time = ros::Time::now().toSec();
+
+  generator_->compute(generator_->get_next_point(current_time),
+                      q_desired_,
+                      current_time);
 }
 
 template<class SI, class SH, class CI, class CH>
@@ -256,35 +296,40 @@ void IKControllerBase<SI, SH, CI, CH>::updateCommand() {
   robot_wrapper->updateState(q_, qd_, true);
   robot_wrapper->computeAllTerms();
   Eigen::VectorXd nl_terms = robot_wrapper->getNonLinearTerms().head(nr_chain_joints_);
-  Eigen::VectorXd q_err(nr_chain_joints_);
 
-  bool success = true;
   {
     std::lock_guard<std::mutex> lock(target_mutex_);
-    for (size_t i = 0; i < nr_chain_joints_; i++) {
-      success &= angles::shortest_angular_distance_with_large_limits(q_(i),
-                                                                     q_desired_(i),
-                                                                     lower_limit_(i),
-                                                                     upper_limit_(i),
-                                                                     q_err(i));
-    }
+    q_next_ = generator_->get_next_point(ros::Time::now().toSec());
+  }
+
+  bool success = true;
+  for (size_t i = 0; i < nr_chain_joints_; i++) {
+    success &= angles::shortest_angular_distance_with_large_limits(q_(i),
+                                                                   q_next_(i),
+                                                                   lower_limit_(i),
+                                                                   upper_limit_(i),
+                                                                   q_err_(i));
   }
 
   if (!success){
     ROS_ERROR_THROTTLE(1.0, "Failed to compute joint error: are the limits violated?");
-    q_err.setZero();
+    q_err_.setZero();
   }
 
-  Eigen::VectorXd y = Kp_.cwiseProduct(q_err) - Kd_.cwiseProduct(qd_.head(nr_chain_joints_));
-  command_ = nl_terms + robot_wrapper->getInertia().topLeftCorner(nr_chain_joints_, nr_chain_joints_) * y;
-
+  Eigen::VectorXd y = Kp_.cwiseProduct(q_err_) - Kd_.cwiseProduct(qd_.head(nr_chain_joints_));
+  eff_command_ = nl_terms + robot_wrapper->getInertia().topLeftCorner(nr_chain_joints_, nr_chain_joints_) * y;
+  pos_command_ = q_ + q_err_;
 
   if (publish_ros_) publishRos();
 
   if (debug_) {
     ROS_INFO_STREAM_THROTTLE(5.0, "q_   " << q_.transpose() << std::endl
                                << "q_desired_   " << q_desired_.transpose() << std::endl
-                               << "q_error:     " << q_err.transpose());
+                               << "q_error:     " << q_err_.transpose() << std::endl
+                               << "p term:      " << Kp_.cwiseProduct(q_err_).transpose() << std::endl
+                               << "d term:      " << Kd_.cwiseProduct(qd_.head(nr_chain_joints_)).transpose() << std::endl
+                               << "nl terms:    " << nl_terms.transpose() << std::endl
+                               << "M*y:         " << (robot_wrapper->getInertia().topLeftCorner(nr_chain_joints_, nr_chain_joints_) * y).transpose());
   }
 }
 
@@ -292,7 +337,7 @@ template<class SI, class SH, class CI, class CH>
 void IKControllerBase<SI, SH, CI, CH>::update(const ros::Time &time, const ros::Duration &period) {
   updateCommand();
   for (size_t i = 0; i < nr_chain_joints_; i++) {
-    joint_handles_[i].setCommand(command_[i]);
+    joint_handles_[i].setCommand(eff_command_[i]);
   }
 }
 

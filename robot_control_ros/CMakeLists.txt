@@ -32,8 +32,9 @@ set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${PINOCCHIO_LIBRARI
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
-file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cc)
-add_library(${PROJECT_NAME} ${SRC_FILES})
+add_library(${PROJECT_NAME}
+        src/ik_controller.cc
+        src/task_space_controller.cc)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 
 install(DIRECTORY launch config
