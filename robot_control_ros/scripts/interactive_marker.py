@@ -138,6 +138,17 @@ class SingleMarkerBroadcaster:
     def update_pose_callback(self, feedback):
         self.pose.header.frame_id = self.frame_id
         self.pose.header.stamp = rospy.Time.now()
+        
+        # transform feedback pose in the currect frame
+        try:
+            transform = self.tf_buffer.lookup_transform(self.frame_id, feedback.header.frame_id,
+                                                        rospy.Time(0), rospy.Duration(2))
+            feedback = tf2_geometry_msgs.do_transform_pose(feedback, transform)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException)  as exc:
+            rospy.logerr("Failed to lookup transform: {}".format(exc))
+            rospy.logwarn("Initializing marker in hard coded pose")
+            return
+
         self.pose.pose = feedback.pose
         self.pose_pub.publish(self.pose)
 
