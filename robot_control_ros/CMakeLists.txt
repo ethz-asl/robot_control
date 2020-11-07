@@ -17,6 +17,8 @@ set(PROJECT_DEPENDENCIES
   roscpp
   realtime_tools
   interactive_markers
+  tf2
+  tf2_ros
 )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})

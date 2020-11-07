@@ -17,6 +17,7 @@
 #include <functional>
 #include <urdf/model.h>
 #include <angles/angles.h>
+#include <tf2/convert.h>
 
 namespace rc_ros {
 
@@ -64,6 +65,7 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
     ROS_ERROR_STREAM("Could not find link " << ee_link << " in urdf.");
     return false;
   }
+  frame_id_ = root_link;
   controlled_frame_ = ee_link;
 
   robot_wrapper = std::make_shared<rc::RobotWrapper>();
@@ -233,13 +235,23 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
 
 template<class SI, class SH, class CI, class CH>
 void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::PoseStamped &msg) {
-  Eigen::Vector3d translation(msg.pose.position.x,
-                              msg.pose.position.y,
-                              msg.pose.position.z);
-  Eigen::Quaterniond rotation(msg.pose.orientation.w,
-                              msg.pose.orientation.x,
-                              msg.pose.orientation.y,
-                              msg.pose.orientation.z);
+  try {
+    root_link_tf = tf_buffer.lookupTransform(frame_id_, msg.header.frame_id, ros::Time::now(), ros::Duration(1.0));
+  }
+  catch (const tf2::TransformException& exc){
+    ROS_ERROR_STREAM("Tf lookup failed: " << exc.what());
+  }
+
+  geometry_msgs::PoseStamped pose_in_root_frame;
+  tf2::doTransform(msg, pose_in_root_frame, root_link_tf);
+
+  Eigen::Vector3d translation(pose_in_root_frame.pose.position.x,
+                              pose_in_root_frame.pose.position.y,
+                              pose_in_root_frame.pose.position.z);
+  Eigen::Quaterniond rotation(pose_in_root_frame.pose.orientation.w,
+                              pose_in_root_frame.pose.orientation.x,
+                              pose_in_root_frame.pose.orientation.y,
+                              pose_in_root_frame.pose.orientation.z);
   target_pose_ = pin::SE3(rotation, translation);
   q_ = getJointPositions();
   std::string error{""};

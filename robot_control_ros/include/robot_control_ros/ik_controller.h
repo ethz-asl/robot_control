@@ -26,6 +26,9 @@
 #include <interactive_markers/interactive_marker_server.h>
 #include <robot_control/utils/trajectory_generator.h>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
+
 namespace rc_ros {
 
 template<class StateInterface, class StateHandle, class CommandInterface, class CommandHandle>
@@ -33,6 +36,8 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
     CommandInterface,
     StateInterface> {
  public:
+
+  IKControllerBase() : tf2_listener(tf_buffer){};
 
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
   void starting(const ros::Time&) override;
@@ -67,7 +72,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   pin::SE3 target_pose_;
   pin::SE3 current_pose_;
 
-  std::string frame_id_ = "world";
+  std::string frame_id_;
   std::string controlled_frame_;
   Eigen::VectorXd eff_command_;
   Eigen::VectorXd pos_command_;
@@ -91,6 +96,11 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   Eigen::VectorXd q_err_;
   Eigen::VectorXd q_next_;
   std::unique_ptr<rc::TrajectoryGenerator> generator_;
+
+  // to transform the target
+  tf2_ros::Buffer tf_buffer;
+  tf2_ros::TransformListener tf2_listener;
+  geometry_msgs::TransformStamped root_link_tf;
 };
 
 
