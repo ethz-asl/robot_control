@@ -1,7 +1,14 @@
-## Dependencies
+## Build
 
-- `ros-melodic-orocos-kdl`
-- `ros-melodic-kdl-parser`
+`catkin build robot_control`
+
+## Examples
+
+### IK Solver
+Use the interactive marker to move the target for the end effector pose. Once the target is place in the 
+desired configuration, send the target to the end effector IK solver using the `/set_target` service. 
+- Terminal #1: `roslaunch robot_control ik_debug.launch`
+- Terminal #2: `rosservice call /set_target "{}"`
 
 ## Testing
 

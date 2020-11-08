@@ -119,6 +119,8 @@ ik_controller_sim_kinova3:
   p_gains: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
   d_gains: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
   default_configuration: [0.0, 0.26, 3.14, -2.27, 0.0, 0.96, 1.57]
+  max_velocity: 0.3
+  max_acceleration: 100.0
   lower_limits: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
   upper_limits: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]
   root_link: base_link
