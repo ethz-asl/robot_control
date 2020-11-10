@@ -13,12 +13,13 @@ args, unknown = parser.parse_known_args()
 
 rospy.init_node("unpause_gazebo_ros")
 gazebo_unpause_service = rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
-
-rospy.loginfo("Waiting {}s before unpausing gazebo physics".format(args.delay))
-time.sleep(args.delay)
 try:
+    gazebo_unpause_service.wait_for_service(10.0)
+    rospy.loginfo("Waiting {}s before unpausing gazebo physics".format(args.delay))
+    time.sleep(args.delay)
     gazebo_unpause_service.call()
 except rospy.ROSException as exc:
-    rospy.logerr("Unable to unpause gazebo physics, service not available.")
     rospy.logerr(exc)
+
+
 
