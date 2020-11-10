@@ -287,7 +287,7 @@ void IKControllerBase<SI, SH, CI, CH>::starting(const ros::Time &time) {
   target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
 
   // init first trajectory
-  generator_->compute(q_, q_desired_, time.toSec());
+  generator_->compute(q_.head(nr_chain_joints_), q_desired_.head(nr_chain_joints_), time.toSec());
 
 }
 
@@ -296,7 +296,7 @@ void IKControllerBase<SI, SH, CI, CH>::timeTrajectory() {
   double current_time = ros::Time::now().toSec();
 
   generator_->compute(generator_->get_next_point(current_time),
-                      q_desired_,
+                      q_desired_.head(nr_chain_joints_),
                       current_time);
 }
 
