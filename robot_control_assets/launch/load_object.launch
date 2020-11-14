@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="object"  default="valve"/>
+  <arg name="x"  default="0.0"/>
+  <arg name="y"  default="0.0"/>
+  <arg name="z"  default="0.0"/>
+  <arg name="roll"    default="0.0"/>
+  <arg name="pitch"   default="0.0"/>
+  <arg name="yaw"     default="0.0"/>
+  
+  <param name="/robot_description" command="$(find xacro)/xacro.py --inorder $(find robot_control_assets)/assets/objects/valve/valve.urdf.xacro"/>
+
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
+    args="-param /robot_description -urdf -model valve"  output="screen"/> 
+
+  <!--node name="$(arg object)_state_publisher"  type="robot_state_publisher"  pkg="robot_state_publisher">
+    <remap from="robot_description" to="valve_description"/>
+    <remap from="/joint_states"     to="/valve_joint_states"/>
+  </node-->
+
+</launch>
+

@@ -20,7 +20,7 @@
   <arg name="pitch"                                 default="0.0"/>
   <arg name="yaw"                                   default="0.0"/>
   <!-- Start paused -->
-  <arg name="paused"                                default="false"/>
+  <arg name="paused"                                default="true"/>
   <!-- Use simulation clock -->
   <arg name="use_sim_time"                          default="true"/>
   <!-- Debug mode -->
@@ -37,10 +37,10 @@
   <arg name="robot"     default="panda"/>
 
   <!-- Path of robot description -->
-  <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/$(arg robot)/$(arg robot).urdf.xacro"/>
+  <!--arg name="description_file"            default="$(find robot_control_assets)/assets/arms/$(arg robot)/$(arg robot).urdf.xacro"/-->
 
   <!-- Load robot description for gazebo -->
-  <param name="robot_description" command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/>
+  <!--param name="/robot_description" command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/-->
   <param name="gazebo_ros_control" type="yaml" textfile="$(find robot_control_ros)/config/gazebo_ros_control.yml" />
 
   <!-- Load Gazebo world -->
@@ -74,9 +74,12 @@
                 -J joint_6 1.25
                 -J joint_7 -1.17" if="$(eval arg('robot')=='kinova3')"/>
 
-  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"
+  <!--node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"
     args="-param /robot_description -urdf $(arg inital_config) -model $(arg robot)"
-    output="screen"/>
+    output="screen"/-->
+
+  <!--node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
+    args="-param /robot_description -urdf -model three_revolute_planar -x 0 -y 0 -z 1.0"  output="screen"/--> 
 
 </launch>
 <!--
