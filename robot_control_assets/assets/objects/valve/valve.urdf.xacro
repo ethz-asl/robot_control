@@ -69,4 +69,22 @@
     <limit effort="30" velocity="1.0" lower="-3.14" upper="3.14"/>
   </joint>
 
+  <!-- Gazebo simulation -->
+  <transmission name="wheel_joint_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel_joint_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <legacyModeNS>true</legacyModeNS>
+      <robotParam>valve_description</robotParam>
+      <robotNamespace>valve</robotNamespace>
+    </plugin>
+  </gazebo>
 </robot>

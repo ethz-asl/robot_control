@@ -1,22 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="object"  default="valve"/>
-  <arg name="x"  default="0.0"/>
-  <arg name="y"  default="0.0"/>
-  <arg name="z"  default="0.0"/>
+  <arg name="x"       default="0.0"/>
+  <arg name="y"       default="0.0"/>
+  <arg name="z"       default="0.0"/>
   <arg name="roll"    default="0.0"/>
   <arg name="pitch"   default="0.0"/>
   <arg name="yaw"     default="0.0"/>
   
-  <param name="/robot_description" command="$(find xacro)/xacro.py --inorder $(find robot_control_assets)/assets/objects/valve/valve.urdf.xacro"/>
+  <param name="$(arg object)_description" command="$(find xacro)/xacro.py --inorder $(find robot_control_assets)/assets/objects/$(arg object)/$(arg object).urdf.xacro 
+    x:=$(arg x) y:=$(arg y) z:=$(arg z) roll:=$(arg roll) pitch:=$(arg pitch) yaw:=$(arg yaw)"/>
 
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
-    args="-param /robot_description -urdf -model valve"  output="screen"/> 
+    args="-param $(arg object)_description -urdf -model $(arg object)"  output="screen"/> 
 
-  <!--node name="$(arg object)_state_publisher"  type="robot_state_publisher"  pkg="robot_state_publisher">
-    <remap from="robot_description" to="valve_description"/>
-    <remap from="/joint_states"     to="/valve_joint_states"/>
-  </node-->
+  <node name="$(arg object)_state_publisher"  type="robot_state_publisher"  pkg="robot_state_publisher">
+    <remap from="robot_description" to="$(arg object)_description"/>
+    <remap from="/joint_states"     to="$(arg object)/joint_states"/>
+  </node>
+
+  <!-- Load joint controller to publish the joint state under object namespace -->
+  <group ns="$(arg object)">
+    <rosparam command="load" file="$(find robot_control_assets)/config/ros_control.yaml" subst_value="True"/>  
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller"/>
+  </group>
 
 </launch>
 
