@@ -59,6 +59,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   bool setTargetCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
 
  protected:
+  std::atomic_bool started_;
   int nr_chain_joints_;
   std::shared_ptr<rc::RobotWrapper> robot_wrapper;
   std::shared_ptr<rc::IKNullSpaceController_KDL> controller;
@@ -87,6 +88,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> pose_publisher_;
   std::unique_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>> target_publisher_;
   std::unique_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState>> q_desired_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState>> q_current_publisher_;
 
   ros::Subscriber target_subscriber_;
 

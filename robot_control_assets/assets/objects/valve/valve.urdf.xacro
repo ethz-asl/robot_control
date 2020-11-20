@@ -65,7 +65,7 @@
     <axis xyz="0 1 0" rpy="0 0 0"/>
     <parent link="valve_base"/>
     <child link="wheel"/>
-    <dynamics damping="1.0" friction="10.0"/>
+    <dynamics damping="10.0" friction="10.0"/>
     <limit effort="30" velocity="1.0" lower="-3.14" upper="3.14"/>
   </joint>
 

@@ -218,8 +218,15 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
   pose_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>>(node_handle,
                                                                                                     current_pose_topic,
                                                                                                     10);
+
+  q_current_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<sensor_msgs::JointState>>(node_handle,
+                                                                                                    "/ik_controller/q_current",
+                                                                                                    10);
+  q_current_publisher_->msg_.name = joint_names_;
+  q_current_publisher_->msg_.position.resize(nr_chain_joints_, 0.0);
+
   q_desired_publisher_ = std::make_unique<realtime_tools::RealtimePublisher<sensor_msgs::JointState>>(node_handle,
-                                                                                                    "/q_desired",
+                                                                                                    "/ik_controller/q_desired",
                                                                                                     10);
   q_desired_publisher_->msg_.name = joint_names_;
   q_desired_publisher_->msg_.position.resize(nr_chain_joints_, 0.0);
@@ -228,13 +235,15 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
   std::string target_pose_topic = ctrl_handle.param<std::string>("target_pose_topic", "/target_pose");
   target_subscriber_ = node_handle.subscribe("/target_pose", 10, &IKControllerBase::newTargetCallback, this);
   q_err_ = Eigen::VectorXd(nr_chain_joints_);
-
+  started_ = false;
   ROS_INFO("IK controller initialized");
   return true;
 }
 
 template<class SI, class SH, class CI, class CH>
 void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::PoseStamped &msg) {
+  if (!started_ ) return;
+
   try {
     root_link_tf = tf_buffer.lookupTransform(frame_id_, msg.header.frame_id, ros::Time::now(), ros::Duration(1.0));
   }
@@ -288,7 +297,7 @@ void IKControllerBase<SI, SH, CI, CH>::starting(const ros::Time &time) {
 
   // init first trajectory
   generator_->compute(q_.head(nr_chain_joints_), q_desired_.head(nr_chain_joints_), time.toSec());
-
+  started_ = true;
 }
 
 template<class SI, class SH, class CI, class CH>
@@ -395,6 +404,14 @@ void IKControllerBase<SI, SH, CI, CH>::publishRos() {
       q_desired_publisher_->msg_.position[i] = q_desired_[i];
     q_desired_publisher_->unlockAndPublish();
   }
+
+  if(q_current_publisher_->trylock()){
+    q_current_publisher_->msg_.header.stamp = ros::Time::now();
+    for (size_t i=0; i<nr_chain_joints_; i++)
+      q_current_publisher_->msg_.position[i] = q_[i];
+    q_current_publisher_->unlockAndPublish();
+  }
+   
 }
 
 template<class SI, class SH, class CI, class CH>
