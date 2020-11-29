@@ -335,12 +335,13 @@ void IKControllerBase<SI, SH, CI, CH, T...>::updateCommand() {
     computeIK();
   }
 
-  timeTrajectory();
-  q_next_ = generator_->get_next_point(ros::Time::now().toSec());
+  //timeTrajectory();
+  //q_next_ = generator_->get_next_point(ros::Time::now().toSec());
   bool success = true;
   for (size_t i = 0; i < nr_chain_joints_; i++) {
     success &= angles::shortest_angular_distance_with_large_limits(q_(i),
-                                                                   q_next_(i),
+                                                                   //q_next_(i),
+                                                                   q_desired_(i),
                                                                    lower_limit_(i),
                                                                    upper_limit_(i),
                                                                    q_err_(i));

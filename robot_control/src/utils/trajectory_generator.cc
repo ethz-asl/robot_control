@@ -15,7 +15,7 @@ TrajectoryGenerator::TrajectoryGenerator(double max_vel, double max_acc, unsigne
 {
   for (unsigned int i=0; i<size; i++){
     //generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
-    generators_[i] = new rc::VelocityProfile_ATrap(max_vel, max_acc);
+    generators_[i] = new rc::VelocityProfile_ATrap(max_vel, max_acc, max_acc);
   }
 }
 
@@ -47,7 +47,9 @@ void TrajectoryGenerator::compute_from_initial_velocity(const Eigen::VectorXd& s
 
   // generate initial profiles
   for (unsigned int i = 0; i < generators_.size(); i++){
-    generators_[i]->setProfileStartVelocity(start(i), end(i), start_velocity(i));
+    bool ok = generators_[i]->setProfileStartVelocity(start(i), end(i), start_velocity(i));
+    if (!ok) std::cout << "Could not set profile start velocity for start: "
+       << start(i) << ", end: " << end(i) << ", vel: " << start_velocity(i) << std::endl;
   }
 
   // find profile that takes most time
