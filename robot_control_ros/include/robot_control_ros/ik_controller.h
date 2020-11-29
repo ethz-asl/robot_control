@@ -31,17 +31,17 @@
 
 namespace rc_ros {
 
-template<class StateInterface, class StateHandle, class CommandInterface, class CommandHandle>
+template<class StateInterface, class StateHandle, class CommandInterface, class CommandHandle, class... T>
 class IKControllerBase : public controller_interface::MultiInterfaceController<
     CommandInterface,
-    StateInterface> {
+    StateInterface, T...> {
  public:
 
   IKControllerBase() : tf2_listener(tf_buffer){};
 
-  bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle) override;
+  virtual bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle);
   void starting(const ros::Time&) override;
-  virtual void stopping(const ros::Time& /*time*/) {};
+  virtual void stopping(const ros::Time& /*time*/);
 
   void newTargetCallback(const geometry_msgs::PoseStamped&);
   void updateCommand();
@@ -57,8 +57,13 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   Eigen::VectorXd getJointPositions() const;
 
   bool setTargetCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
+  void updateModel();
+  virtual void adaptTarget(pinocchio::SE3& target){};
+  void computeIK();
 
  protected:
+  std::mutex ik_solution_mutex_;
+
   std::atomic_bool started_;
   int nr_chain_joints_;
   std::shared_ptr<rc::RobotWrapper> robot_wrapper;
@@ -97,6 +102,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
 
   Eigen::VectorXd q_err_;
   Eigen::VectorXd q_next_;
+  Eigen::VectorXd nl_terms_;
   std::unique_ptr<rc::TrajectoryGenerator> generator_;
 
   // to transform the target

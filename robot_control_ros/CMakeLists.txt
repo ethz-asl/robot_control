@@ -36,6 +36,7 @@ include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
         src/ik_controller.cc
+        src/impedance_motion_controller.cc
         src/task_space_controller.cc)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 

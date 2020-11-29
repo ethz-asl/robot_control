@@ -21,10 +21,10 @@
 
 namespace rc_ros {
 
-template<class SI, class SH, class CI, class CH>
-bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_hw,
-                                            ros::NodeHandle &node_handle,
-                                            ros::NodeHandle &ctrl_handle) {
+template<class SI, class SH, class CI, class CH, class... T>
+bool IKControllerBase<SI, SH, CI, CH, T...>::init(hardware_interface::RobotHW *robot_hw,
+                                                  ros::NodeHandle &node_handle,
+                                                  ros::NodeHandle &ctrl_handle) {
 
   std::string description_name;
   if (!ctrl_handle.param("description_name", description_name, {"/robot_description"})) {
@@ -240,8 +240,8 @@ bool IKControllerBase<SI, SH, CI, CH>::init(hardware_interface::RobotHW *robot_h
   return true;
 }
 
-template<class SI, class SH, class CI, class CH>
-void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::PoseStamped &msg) {
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::newTargetCallback(const geometry_msgs::PoseStamped &msg) {
   if (!started_ ) return;
 
   try {
@@ -261,12 +261,19 @@ void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::Po
                               pose_in_root_frame.pose.orientation.x,
                               pose_in_root_frame.pose.orientation.y,
                               pose_in_root_frame.pose.orientation.z);
+
   target_pose_ = pin::SE3(rotation, translation);
-  q_ = getJointPositions();
+  adaptTarget(target_pose_);
+  computeIK();
+  timeTrajectory();
+}
+
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::computeIK(){
   std::string error{""};
   Eigen::VectorXd q_desired = controller->computeCommand(target_pose_.rotation(),
-                                          target_pose_.translation(),
-                                          q_, error);
+                                                         target_pose_.translation(),
+                                                         q_, error);
 
   // the next desired point is the closest within the limits
   double delta = 0;
@@ -275,54 +282,55 @@ void IKControllerBase<SI, SH, CI, CH>::newTargetCallback(const geometry_msgs::Po
     q_desired(i) = q_(i) + delta;
   }
 
-  if (!error.empty()) ROS_ERROR_STREAM_THROTTLE(1.0, "IK failed: " << error);
-
+  // copy q desired
   {
-    std::lock_guard<std::mutex> lock(target_mutex_);
+    std::lock_guard<std::mutex> lock(ik_solution_mutex_);
     q_desired_ = q_desired;
-    timeTrajectory();
   }
-  
 
+  if (!error.empty()) ROS_ERROR_STREAM_THROTTLE(1.0, "IK failed: " << error);
   if (debug_) ROS_INFO_STREAM_THROTTLE(0.5, ">>> " << q_desired_.transpose());
 }
 
-template<class SI, class SH, class CI, class CH>
-void IKControllerBase<SI, SH, CI, CH>::starting(const ros::Time &time) {
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::starting(const ros::Time &time) {
   q_ = getJointPositions();
-  q_desired_ = q_;
   qd_ = getJointVelocities();
   robot_wrapper->updateState(q_, qd_, true);
   target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
 
   // init first trajectory
+  q_desired_ = q_;
   generator_->compute(q_.head(nr_chain_joints_), q_desired_.head(nr_chain_joints_), time.toSec());
   started_ = true;
 }
 
-template<class SI, class SH, class CI, class CH>
-void IKControllerBase<SI, SH, CI, CH>::timeTrajectory() {
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::timeTrajectory() {
   double current_time = ros::Time::now().toSec();
-
+  std::lock_guard<std::mutex> lock(ik_solution_mutex_);
   generator_->compute(generator_->get_next_point(current_time),
                       q_desired_.head(nr_chain_joints_),
                       current_time);
 }
 
-template<class SI, class SH, class CI, class CH>
-void IKControllerBase<SI, SH, CI, CH>::updateCommand() {
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::updateModel() {
   q_ = getJointPositions();
   qd_ = getJointVelocities();
-
   robot_wrapper->updateState(q_, qd_, true);
   robot_wrapper->computeAllTerms();
-  Eigen::VectorXd nl_terms = robot_wrapper->getNonLinearTerms().head(nr_chain_joints_);
+  nl_terms_ = robot_wrapper->getNonLinearTerms().head(nr_chain_joints_);
+}
+
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::updateCommand() {
+  updateModel();
 
   {
-    std::lock_guard<std::mutex> lock(target_mutex_);
-    q_next_ = generator_->get_next_point(ros::Time::now().toSec());
+    std::lock_guard<std::mutex> lock(ik_solution_mutex_);
+    q_next_ = generator_->get_next_point(ros::Time::now().toSec());  
   }
-
   bool success = true;
   for (size_t i = 0; i < nr_chain_joints_; i++) {
     success &= angles::shortest_angular_distance_with_large_limits(q_(i),
@@ -338,7 +346,7 @@ void IKControllerBase<SI, SH, CI, CH>::updateCommand() {
   }
 
   Eigen::VectorXd y = Kp_.cwiseProduct(q_err_) - Kd_.cwiseProduct(qd_.head(nr_chain_joints_));
-  eff_command_ = nl_terms + robot_wrapper->getInertia().topLeftCorner(nr_chain_joints_, nr_chain_joints_) * y;
+  eff_command_ = nl_terms_ + robot_wrapper->getInertia().topLeftCorner(nr_chain_joints_, nr_chain_joints_) * y;
   pos_command_ = q_ + q_err_;
 
   if (publish_ros_) publishRos();
@@ -349,21 +357,21 @@ void IKControllerBase<SI, SH, CI, CH>::updateCommand() {
                                << "q_error:     " << q_err_.transpose() << std::endl
                                << "p term:      " << Kp_.cwiseProduct(q_err_).transpose() << std::endl
                                << "d term:      " << Kd_.cwiseProduct(qd_.head(nr_chain_joints_)).transpose() << std::endl
-                               << "nl terms:    " << nl_terms.transpose() << std::endl
+                               << "nl terms:    " << nl_terms_.transpose() << std::endl
                                << "M*y:         " << (robot_wrapper->getInertia().topLeftCorner(nr_chain_joints_, nr_chain_joints_) * y).transpose());
   }
 }
 
-template<class SI, class SH, class CI, class CH>
-void IKControllerBase<SI, SH, CI, CH>::update(const ros::Time &time, const ros::Duration &period) {
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::update(const ros::Time &time, const ros::Duration &period) {
   updateCommand();
   for (size_t i = 0; i < nr_chain_joints_; i++) {
     joint_handles_[i].setCommand(eff_command_[i]);
   }
 }
 
-template<class SI, class SH, class CI, class CH>
-Eigen::VectorXd IKControllerBase<SI, SH, CI, CH>::getJointVelocities() const {
+template<class SI, class SH, class CI, class CH, class... T>
+Eigen::VectorXd IKControllerBase<SI, SH, CI, CH, T...>::getJointVelocities() const {
   Eigen::VectorXd joint_velocities(robot_wrapper->getDof());
   joint_velocities.setZero();
   for (size_t i = 0; i < nr_chain_joints_; i++) {
@@ -372,8 +380,8 @@ Eigen::VectorXd IKControllerBase<SI, SH, CI, CH>::getJointVelocities() const {
   return joint_velocities;
 }
 
-template<class SI, class SH, class CI, class CH>
-Eigen::VectorXd IKControllerBase<SI, SH, CI, CH>::getJointPositions() const {
+template<class SI, class SH, class CI, class CH, class... T>
+Eigen::VectorXd IKControllerBase<SI, SH, CI, CH, T...>::getJointPositions() const {
   Eigen::VectorXd joint_positions(robot_wrapper->getDof());
   joint_positions.setZero();
   for (size_t i = 0; i < nr_chain_joints_; i++) {
@@ -382,8 +390,8 @@ Eigen::VectorXd IKControllerBase<SI, SH, CI, CH>::getJointPositions() const {
   return joint_positions;
 }
 
-template<class SI, class SH, class CI, class CH>
-void IKControllerBase<SI, SH, CI, CH>::publishRos() {
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::publishRos() {
   if (pose_publisher_->trylock()) {
     current_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
     pose_publisher_->msg_.header.stamp = ros::Time::now();
@@ -414,8 +422,8 @@ void IKControllerBase<SI, SH, CI, CH>::publishRos() {
    
 }
 
-template<class SI, class SH, class CI, class CH>
-bool IKControllerBase<SI, SH, CI, CH>::addCommandHandles(hardware_interface::RobotHW *robot_hw) {
+template<class SI, class SH, class CI, class CH, class... T>
+bool IKControllerBase<SI, SH, CI, CH, T...>::addCommandHandles(hardware_interface::RobotHW *robot_hw) {
   auto effort_joint_interface = robot_hw->get<CI>();
   if (effort_joint_interface == nullptr) {
     ROS_ERROR_STREAM("Error getting effort joint interface.");
@@ -427,8 +435,8 @@ bool IKControllerBase<SI, SH, CI, CH>::addCommandHandles(hardware_interface::Rob
   return true;
 }
 
-template<class SI, class SH, class CI, class CH>
-bool IKControllerBase<SI, SH, CI, CH>::addStateHandles(hardware_interface::RobotHW *robot_hw) {
+template<class SI, class SH, class CI, class CH, class... T>
+bool IKControllerBase<SI, SH, CI, CH, T...>::addStateHandles(hardware_interface::RobotHW *robot_hw) {
   auto state_interface = robot_hw->get<SI>();
   if (state_interface == nullptr) {
     ROS_ERROR_STREAM("Can't get franka state interface");
@@ -440,4 +448,8 @@ bool IKControllerBase<SI, SH, CI, CH>::addStateHandles(hardware_interface::Robot
   }
   return true;
 }
+
+template<class SI, class SH, class CI, class CH, class... T>
+void IKControllerBase<SI, SH, CI, CH, T...>::stopping(const ros::Time& /*time*/){}
+
 }

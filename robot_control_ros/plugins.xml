@@ -30,4 +30,13 @@
       IK based controller for simulated robot.
     </description>
   </class>
+
+  <class name="robot_control_ros/ImpedanceControllerTest"
+         type="rc_ros::ImpedanceControllerTest"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+      Impedance/IK motion controller.
+    </description>
+  </class>
+
 </library>
