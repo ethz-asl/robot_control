@@ -58,7 +58,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
 
   bool setTargetCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
   void updateModel();
-  virtual void adaptTarget(pinocchio::SE3& target){};
+  virtual pinocchio::SE3 adaptTarget(const pinocchio::SE3& target);
   void computeIK();
 
  protected:
@@ -76,6 +76,7 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   bool debug_;
   std::mutex target_mutex_;
   pin::SE3 target_pose_;
+  pin::SE3 target_pose_adapted_;
   pin::SE3 current_pose_;
 
   std::string frame_id_;

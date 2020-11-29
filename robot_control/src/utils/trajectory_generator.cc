@@ -14,7 +14,8 @@ TrajectoryGenerator::TrajectoryGenerator(double max_vel, double max_acc, unsigne
     : generators_(size)
 {
   for (unsigned int i=0; i<size; i++){
-    generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
+    //generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
+    generators_[i] = new rc::VelocityProfile_ATrap(max_vel, max_acc);
   }
 }
 
@@ -26,19 +27,27 @@ TrajectoryGenerator::~TrajectoryGenerator()
 
 void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
                                   const Eigen::VectorXd& end,
-                                  double t_start) {
+                                  double t_start){
+  Eigen::VectorXd start_velocity(start.size());
+  compute_from_initial_velocity(start, end, start_velocity, t_start);
+}
+
+void TrajectoryGenerator::compute_from_initial_velocity(const Eigen::VectorXd& start,
+                                                        const Eigen::VectorXd& end,
+                                                        const Eigen::VectorXd& start_velocity,
+                                                        double t_start) {
 
   initial_time = t_start;
 
   // check
   if (start.size() != generators_.size() ||
-      end.size() != generators_.size()) {
+      end.size() != generators_.size() || start_velocity.size() != generators_.size()) {
     throw std::runtime_error("Point size different from generator size.");
   }
 
   // generate initial profiles
   for (unsigned int i = 0; i < generators_.size(); i++){
-    generators_[i]->SetProfile(start(i), end(i));
+    generators_[i]->setProfileStartVelocity(start(i), end(i), start_velocity(i));
   }
 
   // find profile that takes most time

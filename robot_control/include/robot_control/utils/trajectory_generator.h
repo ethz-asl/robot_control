@@ -11,6 +11,7 @@
 // https://github.com/PR2/pr2_common_actions/blob/kinetic-devel/joint_trajectory_generator/include/joint_trajectory_generator/trajectory_generation.h
 
 #include <kdl/velocityprofile_trap.hpp>
+#include <robot_control/utils/velocity_profile_atrap.h>
 #include <vector>
 #include <Eigen/Core>
 
@@ -26,14 +27,20 @@ class TrajectoryGenerator
                const Eigen::VectorXd& end,
                const double t_start);
 
+  void compute_from_initial_velocity(const Eigen::VectorXd& start,
+                                     const Eigen::VectorXd& end,
+                                     const Eigen::VectorXd& start_velocity,
+                                     const double t_start);
+
+
   Eigen::VectorXd get_next_point(const double time);
 
  private:
   double max_time;
   double initial_time;
  public:
-  std::vector<KDL::VelocityProfile_Trap*> generators_;
-
+  //std::vector<KDL::VelocityProfile_Trap*> generators_;
+  std::vector<rc::VelocityProfile_ATrap*> generators_;
 };
 }
 

@@ -33,6 +33,7 @@ include_directories(include SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 add_library(${PROJECT_NAME}
   src/math/math.cpp
   src/utils/timer.cc
+  src/utils/velocity_profile_atrap.cpp
   src/utils/trajectory_generator.cc
   src/modeling/robot_wrapper.cc
   src/controllers/end_effector_controllers/task_space_controller.cc

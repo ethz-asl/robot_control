@@ -27,7 +27,7 @@ public:
 
 protected:
   virtual void readMeasurements(){};
-  void adaptTarget(pinocchio::SE3& target) override;
+  pinocchio::SE3 adaptTarget(const pinocchio::SE3& target) override;
   double threshold_value(const double value, const double positive_threshold);
 
 protected:

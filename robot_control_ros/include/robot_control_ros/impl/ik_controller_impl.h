@@ -263,16 +263,14 @@ void IKControllerBase<SI, SH, CI, CH, T...>::newTargetCallback(const geometry_ms
                               pose_in_root_frame.pose.orientation.z);
 
   target_pose_ = pin::SE3(rotation, translation);
-  adaptTarget(target_pose_);
-  computeIK();
-  timeTrajectory();
+  //timeTrajectory();
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
 void IKControllerBase<SI, SH, CI, CH, T...>::computeIK(){
   std::string error{""};
-  Eigen::VectorXd q_desired = controller->computeCommand(target_pose_.rotation(),
-                                                         target_pose_.translation(),
+  Eigen::VectorXd q_desired = controller->computeCommand(target_pose_adapted_.rotation(),
+                                                         target_pose_adapted_.translation(),
                                                          q_, error);
 
   // the next desired point is the closest within the limits
@@ -309,9 +307,9 @@ template<class SI, class SH, class CI, class CH, class... T>
 void IKControllerBase<SI, SH, CI, CH, T...>::timeTrajectory() {
   double current_time = ros::Time::now().toSec();
   std::lock_guard<std::mutex> lock(ik_solution_mutex_);
-  generator_->compute(generator_->get_next_point(current_time),
-                      q_desired_.head(nr_chain_joints_),
-                      current_time);
+  generator_->compute_from_initial_velocity(generator_->get_next_point(current_time),
+                                            q_desired_.head(nr_chain_joints_),
+                                            qd_.head(nr_chain_joints_), current_time);
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
@@ -324,13 +322,21 @@ void IKControllerBase<SI, SH, CI, CH, T...>::updateModel() {
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
+pinocchio::SE3 IKControllerBase<SI, SH, CI, CH, T...>::adaptTarget(const pinocchio::SE3& target) {
+  return target;
+}
+
+template<class SI, class SH, class CI, class CH, class... T>
 void IKControllerBase<SI, SH, CI, CH, T...>::updateCommand() {
   updateModel();
-
   {
-    std::lock_guard<std::mutex> lock(ik_solution_mutex_);
-    q_next_ = generator_->get_next_point(ros::Time::now().toSec());  
+    std::lock_guard<std::mutex> lock(target_mutex_);
+    target_pose_adapted_ = adaptTarget(target_pose_);
+    computeIK();
   }
+
+  timeTrajectory();
+  q_next_ = generator_->get_next_point(ros::Time::now().toSec());
   bool success = true;
   for (size_t i = 0; i < nr_chain_joints_; i++) {
     success &= angles::shortest_angular_distance_with_large_limits(q_(i),

@@ -79,7 +79,7 @@ bool ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::init(hardware_interfac
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
-void ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::adaptTarget(pinocchio::SE3& target) {
+pinocchio::SE3 ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::adaptTarget(const pinocchio::SE3& target) {
   readMeasurements();
 
   // threshold
@@ -113,8 +113,8 @@ void ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::adaptTarget(pinocchio:
   pinocchio::SE3 t_controlled = this->robot_wrapper->getFramePlacement(this->controlled_frame_);
   pinocchio::SE3 t_controlled_sensor = t_controlled.actInv(t_sensor);
   ROS_INFO_STREAM_THROTTLE(1.0, "Transform from sensor to controlled frame: " << t_controlled_sensor);
-  target = target.act(t_controlled_sensor.act(t_sensor_compliant));
-
+  pinocchio::SE3 target_adapted = target.act(t_controlled_sensor.act(t_sensor_compliant));
+  return target_adapted;
   ROS_INFO_STREAM_THROTTLE(1.0, "Adapting reference");
 }
 
