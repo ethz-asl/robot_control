@@ -37,7 +37,7 @@ class RobotWrapper {
 
   void forwardKinematics();
   MatrixXd getJointJacobian(std::string& joint_name);
-  MatrixXd getFrameJacobian(std::string& frame_name);
+  void getFrameJacobian(std::string& frame_name, MatrixXd&);
   void getAllFrameJacobians(const std::string& frame_name, MatrixXd&, MatrixXd&);
   pin::SE3& getFramePlacement(std::string& frame_name);
   pin::Motion getFrameVelocity(std::string& frame_name);

@@ -71,17 +71,16 @@ MatrixXd RobotWrapper::getJointJacobian(std::string& joint_name) {
   Matrix<double, 6, Dynamic> J(6, model.nv);
   auto joint_id = model.getJointId(joint_name);
   forwardKinematics();
-  pin::getJointJacobian(model, data, joint_id, pin::ReferenceFrame::LOCAL, J);
+  pin::getJointJacobian(model, data, joint_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);
   return J;
 }
 
-MatrixXd RobotWrapper::getFrameJacobian(std::string& frame_name) {
-  Matrix<double, 6, Dynamic> J(6, model.nv);
+void RobotWrapper::getFrameJacobian(std::string& frame_name, MatrixXd& J) {
+  J.resize(6, model.nv);
   auto frame_id = model.getFrameId(frame_name);
   pin::computeJointJacobians(model, data, q);
   pin::updateFramePlacements(model, data);
-  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL, J);
-  return J;
+  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);;
 }
 
 void RobotWrapper::getAllFrameJacobians(const std::string& frame_name, Eigen::MatrixXd& J, Eigen::MatrixXd& dJ) {
@@ -89,8 +88,8 @@ void RobotWrapper::getAllFrameJacobians(const std::string& frame_name, Eigen::Ma
   pin::computeJointJacobians(model, data, q);
   pin::computeJointJacobiansTimeVariation(model, data, q, v);
   pin::updateFramePlacements(model, data);
-  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL, J);
-  pin::getFrameJacobianTimeVariation(model, data, frame_id, pin::ReferenceFrame::LOCAL, dJ);
+  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);
+  pin::getFrameJacobianTimeVariation(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, dJ);
 }
 
 pin::SE3& RobotWrapper::getFramePlacement(std::string& frame_name) {
@@ -100,7 +99,7 @@ pin::SE3& RobotWrapper::getFramePlacement(std::string& frame_name) {
 
 pin::Motion RobotWrapper::getFrameVelocity(std::string& frame_name) {
   auto frame_id = model.getFrameId(frame_name);
-  return pin::getFrameVelocity(model, data, frame_id, pin::ReferenceFrame::LOCAL);
+  return pin::getFrameVelocity(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED);
 }
 
 MatrixXd RobotWrapper::getInertia() {

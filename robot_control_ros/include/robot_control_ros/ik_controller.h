@@ -7,19 +7,19 @@
  */
 #pragma once
 
-#include <robot_control/modeling/robot_wrapper.h>
 #include <robot_control/controllers/end_effector_controllers/kdl_ik_ns_controller.h>
+#include <robot_control/modeling/robot_wrapper.h>
 
 #include <controller_interface/multi_interface_controller.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/robot_hw.h>
+#include <realtime_tools/realtime_publisher.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <realtime_tools/realtime_publisher.h>
-#include <std_srvs/Empty.h>
 #include <sensor_msgs/JointState.h>
+#include <std_srvs/Empty.h>
 
 #include <franka_hw/franka_state_interface.h>
 
@@ -31,23 +31,24 @@
 
 namespace rc_ros {
 
-template<class StateInterface, class StateHandle, class CommandInterface, class CommandHandle, class... T>
-class IKControllerBase : public controller_interface::MultiInterfaceController<
-    CommandInterface,
-    StateInterface, T...> {
+template <class StateInterface, class StateHandle, class CommandInterface, class CommandHandle,
+          class... T>
+class IKControllerBase
+    : public controller_interface::MultiInterfaceController<CommandInterface, StateInterface,
+                                                            T...> {
  public:
-
   IKControllerBase() : tf2_listener(tf_buffer){};
 
-  virtual bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle, ros::NodeHandle& ctrl_handle);
+  bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle,
+            ros::NodeHandle& ctrl_handle) override;
   void starting(const ros::Time&) override;
-  virtual void stopping(const ros::Time& /*time*/);
+  void stopping(const ros::Time& /*time*/) override;
 
   void newTargetCallback(const geometry_msgs::PoseStamped&);
   void updateCommand();
   void timeTrajectory();
 
-  virtual void update(const ros::Time&, const ros::Duration& period) override;
+  void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
 
   virtual bool addStateHandles(hardware_interface::RobotHW*);
@@ -56,7 +57,6 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   Eigen::VectorXd getJointVelocities() const;
   Eigen::VectorXd getJointPositions() const;
 
-  bool setTargetCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
   void updateModel();
   virtual pinocchio::SE3 adaptTarget(const pinocchio::SE3& target);
   void computeIK();
@@ -110,12 +110,16 @@ class IKControllerBase : public controller_interface::MultiInterfaceController<
   tf2_ros::Buffer tf_buffer;
   tf2_ros::TransformListener tf2_listener;
   geometry_msgs::TransformStamped root_link_tf;
+
+  pinocchio::SE3 pose_start_;
+  double target_received_time_;
+  double target_reached_dt_;
 };
 
-
 template <class StateInterface, class StateHandle>
-class IKControllerEffort : public IKControllerBase<StateInterface, StateHandle,
-    hardware_interface::EffortJointInterface, hardware_interface::JointHandle> {};
+class IKControllerEffort
+    : public IKControllerBase<StateInterface, StateHandle, hardware_interface::EffortJointInterface,
+                              hardware_interface::JointHandle> {};
 
 class IKControllerEffortSim : public IKControllerEffort<hardware_interface::JointStateInterface,
                                                         hardware_interface::JointStateHandle> {};
@@ -125,7 +129,6 @@ class IKControllerPanda : public IKControllerEffortSim {
   bool addStateHandles(hardware_interface::RobotHW*) override;
 };
 
-
-}
+}  // namespace rc_ros
 
 #include <robot_control_ros/impl/ik_controller_impl.h>

@@ -68,7 +68,7 @@ bool ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::init(hardware_interfac
     }
     else{
       torque_threshold_ = Eigen::Vector3d(t_threshold.data());
-      ROS_INFO_STREAM("Force threshold is: " << torque_threshold_.transpose());
+      ROS_INFO_STREAM("Torque threshold is: " << torque_threshold_.transpose());
     }
   }
 
@@ -80,20 +80,23 @@ bool ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::init(hardware_interfac
 
 template<class SI, class SH, class CI, class CH, class... T>
 pinocchio::SE3 ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::adaptTarget(const pinocchio::SE3& target) {
+  pinocchio::SE3 target_adapted = IKControllerBase<SI, SH, CI, CH, T...>::adaptTarget(target);
   readMeasurements();
 
   // threshold
+  Eigen::Vector3d force_th;
+  Eigen::Vector3d torque_th;
   for(size_t i=0; i<3; i++){
-    force_measured_(i) = threshold_value(force_measured_(i), force_threshold_(i));
-    torque_measured_(i) = threshold_value(torque_measured_(i), torque_threshold_(i));
+    force_th(i) = threshold_value(force_measured_(i), force_threshold_(i));
+    torque_th(i) = threshold_value(torque_measured_(i), torque_threshold_(i));
   }
 
-  ROS_INFO_STREAM_THROTTLE(1.0, "Tresholded force: " << force_measured_.transpose()
-    << ", " << torque_measured_.transpose());
+  ROS_INFO_STREAM_THROTTLE(1.0, "Tresholded force: " << force_th.transpose()
+    << ", " << torque_th.transpose());
 
   // compute error
-  Eigen::Vector3d delta_pos = Kp_f_.head(3).cwiseProduct(force_measured_);
-  Eigen::Vector3d rot_compliant_desired = Kp_f_.tail(3).cwiseProduct(torque_measured_);
+  Eigen::Vector3d delta_pos = Kp_f_.head(3).cwiseProduct(force_th);
+  Eigen::Vector3d rot_compliant_desired = Kp_f_.tail(3).cwiseProduct(torque_th);
   Eigen::Quaterniond delta_rot(1.0, 0.0, 0.0, 0.0);
   double r = rot_compliant_desired.norm();
   if (r > 0) {
@@ -103,6 +106,8 @@ pinocchio::SE3 ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::adaptTarget(
     delta_rot.y() = quatImg[1];
     delta_rot.z() = quatImg[2];
   }
+  ROS_INFO_STREAM_THROTTLE(1.0, "dpos: " << delta_pos.transpose()
+    << ", dquat" << delta_rot.coeffs().transpose());
 
   // find the transform from the compliant frame to the FT sensor
   // use the relative tf between the sensor and the controlled frame
@@ -113,9 +118,8 @@ pinocchio::SE3 ImpedanceMotionControllerBase<SI, SH, CI, CH, T...>::adaptTarget(
   pinocchio::SE3 t_controlled = this->robot_wrapper->getFramePlacement(this->controlled_frame_);
   pinocchio::SE3 t_controlled_sensor = t_controlled.actInv(t_sensor);
   ROS_INFO_STREAM_THROTTLE(1.0, "Transform from sensor to controlled frame: " << t_controlled_sensor);
-  pinocchio::SE3 target_adapted = target.act(t_controlled_sensor.act(t_sensor_compliant));
+  target_adapted = target_adapted.act(t_controlled_sensor.act(t_sensor_compliant));
   return target_adapted;
-  ROS_INFO_STREAM_THROTTLE(1.0, "Adapting reference");
 }
 
 template<class SI, class SH, class CI, class CH, class... T>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node name="load_test" type="load_test" pkg="robot_control_ros" output="screen"/>
+</launch>

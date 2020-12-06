@@ -35,10 +35,15 @@ set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${PINOCCHIO_LIBRARI
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
+        src/controller_base.cc
         src/ik_controller.cc
+        src/impedance_controller.cc
         src/impedance_motion_controller.cc
         src/task_space_controller.cc)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
+
+add_executable(load_test src/load_test.cpp)
+target_link_libraries(load_test ${COMMON_LIBRARIES})
 
 install(DIRECTORY launch config
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
@@ -53,4 +58,3 @@ install(TARGETS ${PROJECT_NAME}
 
 install(FILES plugins.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-

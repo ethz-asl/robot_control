@@ -14,6 +14,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <ros/ros.h>
 #include <pinocchio/spatial/se3.hpp>
+#include <pinocchio/spatial/explog.hpp>
 #include <functional>
 #include <urdf/model.h>
 #include <angles/angles.h>
@@ -262,8 +263,21 @@ void IKControllerBase<SI, SH, CI, CH, T...>::newTargetCallback(const geometry_ms
                               pose_in_root_frame.pose.orientation.y,
                               pose_in_root_frame.pose.orientation.z);
 
-  target_pose_ = pin::SE3(rotation, translation);
-  //timeTrajectory();
+  {
+    std::lock_guard<std::mutex> lock(target_mutex_);
+    target_pose_ = pin::SE3(rotation, translation);
+    pinocchio::Motion target_vel = pinocchio::log6(robot_wrapper->getFramePlacement(controlled_frame_).actInv(target_pose_));
+    double max_linear_speed = target_vel.linear().cwiseAbs().maxCoeff();
+    double max_angular_speed = target_vel.angular().cwiseAbs().maxCoeff();
+    double linear_scaling = max_linear_speed/0.01;
+    double angular_scaling = max_angular_speed/0.1;
+    target_received_time_ = ros::Time::now().toSec();
+    target_reached_dt_ = std::max(linear_scaling, angular_scaling);
+    pose_start_ = current_pose_;
+    //ROS_INFO_STREAM("Pose start is: " << pose_start_);
+    //ROS_INFO_STREAM("Target pose is: " << target_pose_);
+    //ROS_INFO_STREAM("Scaling trajectory: reach in " << target_reached_dt_ << " s.");
+  }
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
@@ -297,19 +311,23 @@ void IKControllerBase<SI, SH, CI, CH, T...>::starting(const ros::Time &time) {
   robot_wrapper->updateState(q_, qd_, true);
   target_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
 
+  pose_start_ = target_pose_;
+  target_received_time_ = ros::Time::now().toSec();
+  target_reached_dt_ = 0.0;
+
   // init first trajectory
   q_desired_ = q_;
   generator_->compute(q_.head(nr_chain_joints_), q_desired_.head(nr_chain_joints_), time.toSec());
   started_ = true;
+  ROS_INFO("IK Controller started!");
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
 void IKControllerBase<SI, SH, CI, CH, T...>::timeTrajectory() {
   double current_time = ros::Time::now().toSec();
   std::lock_guard<std::mutex> lock(ik_solution_mutex_);
-  generator_->compute_from_initial_velocity(generator_->get_next_point(current_time),
-                                            q_desired_.head(nr_chain_joints_),
-                                            qd_.head(nr_chain_joints_), current_time);
+  generator_->compute(generator_->get_next_point(current_time),
+                      q_desired_.head(nr_chain_joints_), current_time);
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
@@ -323,7 +341,20 @@ void IKControllerBase<SI, SH, CI, CH, T...>::updateModel() {
 
 template<class SI, class SH, class CI, class CH, class... T>
 pinocchio::SE3 IKControllerBase<SI, SH, CI, CH, T...>::adaptTarget(const pinocchio::SE3& target) {
-  return target;
+  double dt = ros::Time::now().toSec() - target_received_time_;
+  double alpha = 0.0;
+  if (dt>target_reached_dt_){
+    return target;
+  }
+  else if (dt<0){
+    return pose_start_;
+  }
+  else{
+    alpha = dt/target_reached_dt_;
+  }
+  pinocchio::SE3 target_adapted = pinocchio::SE3::Interpolate(pose_start_, target, alpha);
+  //ROS_INFO_STREAM_THROTTLE(1.0, "alpha: " << alpha << ", target adapted is: " << target_adapted);
+  return target_adapted;
 }
 
 template<class SI, class SH, class CI, class CH, class... T>
@@ -335,16 +366,15 @@ void IKControllerBase<SI, SH, CI, CH, T...>::updateCommand() {
     computeIK();
   }
 
-  //timeTrajectory();
-  //q_next_ = generator_->get_next_point(ros::Time::now().toSec());
   bool success = true;
   for (size_t i = 0; i < nr_chain_joints_; i++) {
     success &= angles::shortest_angular_distance_with_large_limits(q_(i),
-                                                                   //q_next_(i),
                                                                    q_desired_(i),
                                                                    lower_limit_(i),
                                                                    upper_limit_(i),
                                                                    q_err_(i));
+    // clamp max error to 10 deg
+    q_err_(i) = std::min(std::max(q_err_(i), -5*M_PI/180.0), 5*M_PI/180.0);
   }
 
   if (!success){

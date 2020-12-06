@@ -14,8 +14,8 @@ TrajectoryGenerator::TrajectoryGenerator(double max_vel, double max_acc, unsigne
     : generators_(size)
 {
   for (unsigned int i=0; i<size; i++){
-    //generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
-    generators_[i] = new rc::VelocityProfile_ATrap(max_vel, max_acc, max_acc);
+    generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
+    //generators_[i] = new rc::VelocityProfile_ATrap(max_vel, max_acc, max_acc);
   }
 }
 
@@ -25,31 +25,32 @@ TrajectoryGenerator::~TrajectoryGenerator()
     delete generators_[i];
 }
 
+//void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
+//                                 const Eigen::VectorXd& end,
+//                                  double t_start){
+//  Eigen::VectorXd start_velocity(start.size());
+//  compute_from_initial_velocity(start, end, start_velocity, t_start);
+//}
+
 void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
                                   const Eigen::VectorXd& end,
-                                  double t_start){
-  Eigen::VectorXd start_velocity(start.size());
-  compute_from_initial_velocity(start, end, start_velocity, t_start);
-}
-
-void TrajectoryGenerator::compute_from_initial_velocity(const Eigen::VectorXd& start,
-                                                        const Eigen::VectorXd& end,
-                                                        const Eigen::VectorXd& start_velocity,
-                                                        double t_start) {
+                                  double t_start) {
 
   initial_time = t_start;
 
   // check
   if (start.size() != generators_.size() ||
-      end.size() != generators_.size() || start_velocity.size() != generators_.size()) {
+      end.size() != generators_.size()) {
     throw std::runtime_error("Point size different from generator size.");
   }
 
   // generate initial profiles
   for (unsigned int i = 0; i < generators_.size(); i++){
-    bool ok = generators_[i]->setProfileStartVelocity(start(i), end(i), start_velocity(i));
-    if (!ok) std::cout << "Could not set profile start velocity for start: "
-       << start(i) << ", end: " << end(i) << ", vel: " << start_velocity(i) << std::endl;
+    //bool ok = generators_[i]->setProfileStartVelocity(start(i), end(i), start_velocity(i));
+    //if (!ok) std::cout << "Could not set profile start velocity for start: "
+    //   << start(i) << ", end: " << end(i) << ", vel: " << start_velocity(i) << std::endl;
+    //generators_[i]->setProfileStartVelocity(start(i), end(i));
+    generators_[i]->SetProfile(start(i), end(i));
   }
 
   // find profile that takes most time
