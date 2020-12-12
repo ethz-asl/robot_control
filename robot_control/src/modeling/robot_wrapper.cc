@@ -23,7 +23,7 @@ void RobotWrapper::initFromUrdf(std::string& urdf_path) {
   updateState(q0, v0);
 }
 
-void RobotWrapper::initFromXml(std::string& xml_path, bool verbose) {
+void RobotWrapper::initFromXml(const std::string& xml_path, bool verbose) {
   pin::urdf::buildModelFromXML(xml_path, model, verbose);
   data = pin::Data(model);
   VectorXd q0 = getNeutralConfiguration();
@@ -75,12 +75,16 @@ MatrixXd RobotWrapper::getJointJacobian(std::string& joint_name) {
   return J;
 }
 
-void RobotWrapper::getFrameJacobian(std::string& frame_name, MatrixXd& J) {
-  J.resize(6, model.nv);
+void RobotWrapper::getFrameJacobian(std::string& frame_name, MatrixXd& J, const pin::ReferenceFrame& ref) {
+  J.resize(6, model.nv); J.setZero();
   auto frame_id = model.getFrameId(frame_name);
   pin::computeJointJacobians(model, data, q);
   pin::updateFramePlacements(model, data);
-  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);;
+  pin::getFrameJacobian(model, data, frame_id, ref, J);;
+}
+
+void RobotWrapper::getLocalFrameJacobian(std::string& frame_name, MatrixXd& J){
+  getFrameJacobian(frame_name, J, pin::ReferenceFrame::LOCAL);
 }
 
 void RobotWrapper::getAllFrameJacobians(const std::string& frame_name, Eigen::MatrixXd& J, Eigen::MatrixXd& dJ) {

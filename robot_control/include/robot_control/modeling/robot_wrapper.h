@@ -1,8 +1,8 @@
 #pragma once
+#include <Eigen/Dense>
+#include <iostream>
 #include <pinocchio/fwd.hpp>
 #include <string>
-#include <iostream>
-#include <Eigen/Dense>
 #include "pinocchio/algorithm/model.hpp"
 #include "pinocchio/multibody/data.hpp"
 #include "pinocchio/spatial/motion.hpp"
@@ -12,17 +12,17 @@ using namespace Eigen;
 
 namespace rc {
 class RobotWrapper {
-  private:
+ private:
   pin::Model model;
   pin::Data data;
 
-  public:
+ public:
   Eigen::VectorXd q, v;
   RobotWrapper(std::string& urdf_path);
   RobotWrapper();
 
   void initFromUrdf(std::string& urdf_path);
-  void initFromXml(std::string& xml_file, bool verbose=false);
+  void initFromXml(const std::string& xml_file, bool verbose = false);
 
   // Accessors
   const Eigen::VectorXd& getQ() const;
@@ -37,16 +37,18 @@ class RobotWrapper {
 
   void forwardKinematics();
   MatrixXd getJointJacobian(std::string& joint_name);
-  void getFrameJacobian(std::string& frame_name, MatrixXd&);
+  void getFrameJacobian(std::string& frame_name, MatrixXd&,
+                        const pin::ReferenceFrame& ref = pin::ReferenceFrame::LOCAL_WORLD_ALIGNED);
+  void getLocalFrameJacobian(std::string& frame_name, MatrixXd&);
   void getAllFrameJacobians(const std::string& frame_name, MatrixXd&, MatrixXd&);
   pin::SE3& getFramePlacement(std::string& frame_name);
   pin::Motion getFrameVelocity(std::string& frame_name);
   MatrixXd getInertia();
+  MatrixXd getInertiaVariation();
   VectorXd& getNonLinearTerms();
 
   // Changing state
   void updateState(const VectorXd& new_q, const VectorXd& new_v, bool update_kinematics = true);
   void computeAllTerms();
 };
-}
-
+}  // namespace rc
