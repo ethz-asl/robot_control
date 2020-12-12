@@ -24,7 +24,7 @@
   <!-- Use simulation clock -->
   <arg name="use_sim_time"                          default="true"/>
   <!-- Debug mode -->
-  <arg name="debug"                                 default="false"/>
+  <arg name="debug"                                 default="true"/>
   <!-- Verbose mode -->
   <arg name="verbose"                               default="false"/>
   <!-- Load and draw meshes -->

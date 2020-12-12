@@ -35,6 +35,7 @@ set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${PINOCCHIO_LIBRARI
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
+        src/wrench_estimator.cc
         src/controller_base.cc
         src/ik_controller.cc
         src/impedance_controller.cc

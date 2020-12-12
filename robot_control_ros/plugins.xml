@@ -47,4 +47,11 @@
         </description>
     </class>
 
+    <class name="robot_control_ros/WrenchEstimatorSim"
+           type="rc_ros::WrenchEstimatorSim"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Wrench estimator controller.
+        </description>
+    </class>
 </library>
