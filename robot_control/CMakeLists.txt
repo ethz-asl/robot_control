@@ -35,6 +35,7 @@ add_library(${PROJECT_NAME}
   src/utils/timer.cc
   src/utils/velocity_profile_atrap.cpp
   src/utils/trajectory_generator.cc
+  src/utils/momentum_observer.cc
   src/modeling/robot_wrapper.cc
   src/controllers/end_effector_controllers/impedance_controller.cpp
   src/controllers/end_effector_controllers/task_space_controller.cc
