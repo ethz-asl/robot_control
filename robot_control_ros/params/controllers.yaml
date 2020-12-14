@@ -138,3 +138,20 @@ impedance_controller_effort_sim:
     - joint_5
     - joint_6
     - joint_7
+
+wrench_controller:
+  type: "robot_control_ros/WrenchEstimatorSim"
+  description_name: /robot_description
+  frame: panda_hand
+  gain: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0]
+  alpha: 0.9
+  joint_names:
+  - panda_joint1
+  - panda_joint2
+  - panda_joint3
+  - panda_joint4
+  - panda_joint5
+  - panda_joint6
+  - panda_joint7
+  - panda_finger_joint1
+  - panda_finger_joint2
