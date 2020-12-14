@@ -19,6 +19,8 @@ MomentumObserver::MomentumObserver(const std::string& robot_description, const V
   dof_ = model_.getDof();
   gain_ = gain;
   assert(gain_.size() == dof_);
+  std::cout << "[MomentumObserver::MomentumObserver]: alpha: " << alpha_ 
+    << ", gains: " << gain_.transpose() << ", dof: " << dof_ << std::endl;
 }
 
 void MomentumObserver::reset(const VectorXd& q, const VectorXd& qd) {
@@ -46,19 +48,27 @@ void MomentumObserver::estimate_wrench(const VectorXd& q, const VectorXd& qd, co
 
   M_ = model_.getInertia();
   double dt = getTimeSec() - last_time_;
-  if (dt >= 0) Md_ = (M_ - Mprev_) / dt;
+  if (dt > 0) Md_ = (M_ - Mprev_) / dt;
   Mprev_ = M_;
   last_time_ = getTimeSec();
-
+  
+  std::cout << "M : \n" << M_ << std::endl;
+  std::cout << "Md : \n" << M_ << std::endl;
+  std::cout << "tau" << tau.transpose() << std::endl;
+  std::cout << "q: " << q.transpose() << std::endl;
+  std::cout << "qd: " << qd.transpose() << std::endl;
   tauTot_ = tau - model_.getNonLinearTerms() + Md_ * qd;
-
+  std::cout << "tau tot: " << tauTot_.transpose() << std::endl;
   momentumIntegral_ += (tauTot_ + tauExt_) * dt;
   momentumModel_ = M_ * qd;
-
+  std::cout << "mom int: " << momentumIntegral_.transpose() << std::endl;
+  std::cout << "mom model" << momentumModel_.transpose() << std::endl;
   tauExt_ = gain_.asDiagonal() * (momentumModel_ - momentumIntegral_ - momentumInitial_);
+  std::cout << "tau ext: " << tauExt_.transpose() << std::endl;
   tauExtFiltered_ = alpha_ * tauExtFiltered_ + (1.0 - alpha_) * tauExt_;
-
+  std::cout << "tau ext filt: " << tauExtFiltered_.transpose() << std::endl;
   model_.getLocalFrameJacobian(frame, J_);
+  std::cout << "J local: \n" << J_ << std::endl;
 
   // Compute SVD of the jacobian using Eigen functions
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(J_.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -66,9 +76,13 @@ void MomentumObserver::estimate_wrench(const VectorXd& q, const VectorXd& qd, co
   for (int j = 0; j < singular_inv.size(); ++j)
     singular_inv(j) = (singular_inv(j) < 1e-6) ? 0.0 : 1.0 / singular_inv(j);
   Jt_inv_.noalias() = svd.matrixV() * singular_inv.matrix().asDiagonal() * svd.matrixU().adjoint();
-
+  std::cout << "Jt inv: \n" << Jt_inv_  << std::endl;
   // Compute End-Effector Cartesian forces from joint external torques
   extWrench_ = Jt_inv_ * tauExtFiltered_;
+  std::cout << "ext wrench: " << extWrench_.transpose() << std::endl;
+  if (extWrench_.hasNaN()){
+    throw std::runtime_error("Nan in estimated wrench.");
+  }
 }
 
 }  // namespace rc
