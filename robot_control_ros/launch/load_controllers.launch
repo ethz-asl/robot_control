@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <rosparam file="$(find robot_control_ros)/params/controllers.yaml" command="load"/>
+</launch>
