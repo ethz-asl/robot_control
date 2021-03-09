@@ -8,7 +8,6 @@
 #include "pinocchio/spatial/motion.hpp"
 
 namespace pin = pinocchio;
-using namespace Eigen;
 
 namespace rc {
 class RobotWrapper {
@@ -17,7 +16,9 @@ class RobotWrapper {
   pin::Data data;
 
   public:
-  Eigen::VectorXd q, v;
+   using vector_t = Eigen::VectorXd;
+   using matrix_t = Eigen::MatrixXd;
+  vector_t q, v;
   RobotWrapper(std::string& urdf_path);
   RobotWrapper();
 
@@ -25,27 +26,27 @@ class RobotWrapper {
   void initFromXml(std::string& xml_file, bool verbose=false);
 
   // Accessors
-  const Eigen::VectorXd& getQ() const;
-  const Eigen::VectorXd& getV() const;
+  const vector_t& getQ() const;
+  const vector_t& getV() const;
 
   int getDof() const;
 
-  VectorXd getRandomConfiguration() const;
-  VectorXd getNeutralConfiguration() const;
+  vector_t getRandomConfiguration() const;
+  vector_t getNeutralConfiguration() const;
   std::vector<std::string> getJointNames();
   int getJointId(std::string&);
 
   void forwardKinematics();
-  MatrixXd getJointJacobian(std::string& joint_name);
-  MatrixXd getFrameJacobian(std::string& frame_name);
-  void getAllFrameJacobians(const std::string& frame_name, MatrixXd&, MatrixXd&);
+  matrix_t getJointJacobian(std::string& joint_name);
+  matrix_t getFrameJacobian(std::string& frame_name);
+  void getAllFrameJacobians(const std::string& frame_name, matrix_t&, matrix_t&);
   pin::SE3& getFramePlacement(std::string& frame_name);
   pin::Motion getFrameVelocity(std::string& frame_name);
-  MatrixXd getInertia();
-  VectorXd& getNonLinearTerms();
+  matrix_t getInertia();
+  vector_t& getNonLinearTerms();
 
   // Changing state
-  void updateState(const VectorXd& new_q, const VectorXd& new_v, bool update_kinematics = true);
+  void updateState(const vector_t& new_q, const vector_t& new_v, bool update_kinematics = true);
   void computeAllTerms();
 };
 }
