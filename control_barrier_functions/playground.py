@@ -4,7 +4,7 @@ import numpy as np
 from copy import deepcopy
 
 from control_barrier_functions.simulation import DummySimulation
-from control_barrier_functions.functions import JointLimitsFunction
+from control_barrier_functions.functions import *
 from control_barrier_functions.solver import solve_qp, BarrierFunctionManager
 
 DT = 0.01
@@ -13,11 +13,22 @@ URDF_FILE = "/home/giuseppe/catkin_ws/src/robot_control/robot_control_assets/ass
 PACKAGES_DIR = [""]
 
 sim = DummySimulation(URDF_FILE, PACKAGES_DIR)
+
+# Joint limits function
+jlf = JointLimitsFunction(sim.lb, sim.ub)
+
+# End Effector reach function
+eerf = CartesianReachLimitsFunction(model=sim.model, data=sim.data,
+                                    frame1="base_link", frame2="end_effector_link", D=0.5,
+                                    P=np.diag(np.array([1, 1, 0])))
+# Join barrier functions
 bf = BarrierFunctionManager()
-bf.add(JointLimitsFunction(sim.lb, sim.ub))
+bf.add(jlf)
+bf.add(eerf)
 
-u_des = np.ones(sim.model.nv) * 0.1
-
+#u_des = np.ones(sim.model.nv) * 0.1
+u_des = np.zeros(sim.model.nv)
+u_des[4] = 0.1
 while True:
     sim.step(DT)
 
@@ -25,5 +36,4 @@ while True:
     q = deepcopy(sim.q)
     u_opt = bf.solve(q, u_des)
     sim.set_input(u_opt)
-
     time.sleep(DT)

@@ -1,4 +1,6 @@
 import numpy as np
+import pinocchio as pin
+from copy import deepcopy
 
 
 class ZeroingBarrierFunction:
@@ -26,15 +28,46 @@ class JointLimitsFunction(ZeroingBarrierFunction):
 
 
 class CartesianLimitsFunction(ZeroingBarrierFunction):
-    def __init__(self, frame1, frame2, D):
+    def __init__(self, model: pin.Model, data: pin.Data, frame1, frame2, D, P=None):
         super().__init__()
-        self.frame1 = frame1
-        self.frame2 = frame2
+        self.model = deepcopy(model)
+        self.data = deepcopy(data)
+        self.frames = [frame1, frame2]
+        self.frames_idxs = {frame : self.model.getFrameId(frame) for frame in self.frames}
+        self.placements = {frame : np.zeros(3) for frame in self.frames}
         self.D = D
+        if P is None:
+            self.P = np.eye(3)
+        else:
+            self.P = P
+
+    def update_data(self, q):
+        pin.forwardKinematics(self.model, self.data, q)
+        pin.computeJointJacobians(self.model, self.data, q)
+        pin.updateFramePlacements(self.model, self.data)
+        self.placements = {frame : self.data.oMf[self.frames_idxs[frame]].translation for frame in self.frames}
+
+    def get_linear_jacobian(self, frame_idx):
+        return pin.getFrameJacobian(self.model, self.data, frame_idx, pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)[:3, :]
 
     def eval(self, x):
-        pass
+        self.update_data(x)
+        delta = self.placements[self.frames[0]] - self.placements[self.frames[1]]
+        return 0.5 * (delta.transpose().dot(self.P).dot(delta) - self.D ** 2).reshape(1,)
 
-    def J(self, x, jacobians):
-        pass
+    def J(self, x):
+        delta = self.placements[self.frames[0]] - self.placements[self.frames[1]]
+        j0 = self.get_linear_jacobian(self.frames_idxs[self.frames[0]])
+        j1 = self.get_linear_jacobian(self.frames_idxs[self.frames[1]])
+        return delta.transpose().dot(self.P).dot(j0 - j1)
 
+
+class CartesianReachLimitsFunction(CartesianLimitsFunction):
+    def __init__(self, model: pin.Model, data: pin.Data, frame1, frame2, D, P=None):
+        super().__init__(model, data, frame1, frame2, D, P)
+
+    def eval(self, x):
+        return - super().eval(x)
+
+    def J(self, x):
+        return - super().J(x)

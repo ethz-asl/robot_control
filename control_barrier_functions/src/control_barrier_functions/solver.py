@@ -36,8 +36,9 @@ s.t
 
 
 class BarrierFunctionManager:
-    def __init__(self):
+    def __init__(self, debug=False):
         self.barrier_functions = []
+        self.debug = True
 
     def add(self, bf : ZeroingBarrierFunction):
         self.barrier_functions.append(bf)
@@ -45,7 +46,9 @@ class BarrierFunctionManager:
     def eval(self, x):
         h = self.barrier_functions[0].eval(x)
         for bf in self.barrier_functions[1:]:
-            h = np.vstack([h, bf.eval(x)])
+            h = np.hstack([h, bf.eval(x)])
+        if self.debug:
+            print(f"h:\n{h}")
         return h
 
     def J(self, x):

@@ -44,6 +44,16 @@ class DummySimulation:
     def set_input(self, u):
         self.u = u
 
+    def update(self):
+        pin.forwardKinematics(self.model, self.data, self.q, self.u)
+        pin.computeJointJacobians(self.model, self.data, self.q)
+        pin.updateFramePlacements(self.model, self.data)
+
+    def get_velocity(self, frame_name):
+        frame_idx = self.model.getFrameId(frame_name)
+        v = pin.getFrameVelocity(self.model, self.data, frame_idx, pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
+        return v
+
     def step(self, dt):
         self.q = pin.integrate(self.model, self.q, self.u * dt)
         self.robot.display(self.q)
