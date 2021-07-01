@@ -12,7 +12,7 @@ def solve_qp(Q, q, G=None, h=None, A=None, b=None, debug_print=False):
       s.t. G x <= h
       A x = b
     """
-    qp_G = .5 * (q + Q.T)   # make sure P is symmetric
+    qp_G = .5 * (Q + Q.T)   # make sure P is symmetric
     qp_a = -q
     if A is not None:
         qp_C = -np.vstack([A, G]).T
@@ -38,7 +38,7 @@ s.t
 class BarrierFunctionManager:
     def __init__(self, debug=False):
         self.barrier_functions = []
-        self.debug = True
+        self.debug = debug
 
     def add(self, bf : ZeroingBarrierFunction):
         self.barrier_functions.append(bf)
@@ -62,7 +62,7 @@ class BarrierFunctionManager:
         h = self.eval(x)
         G = -self.J(x)
         Q = np.eye(x.size)
-        return solve_qp(Q=Q, q=u, G=G, h=h, debug_print=False)
+        return solve_qp(Q=Q, q=-u, G=G, h=h, debug_print=False)
 
 
 if __name__ == "__main__":
