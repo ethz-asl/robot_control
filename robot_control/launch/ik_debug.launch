@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <!-- Load robot description -->
+    <arg name="description_file"
+         default="$(find robot_control_assets)/assets/arms/kinova3/kinova3.urdf.xacro"/>
+    <param name="robot_description"
+           command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/>
+
+    <node pkg="robot_control" type="ik_debug" name="ik_debug" output="screen" launch-prefix="gdb -ex run --args"/>
+
+    <!--node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" output="screen">
+        <param name="publish_frequency" value="100"/>
+        <param name="use_tf_static"     value="true"/>
+        <param name="use_gui"           value="true"/>
+    </node-->
+
+    <!-- Publish robot state (joints) as TF -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
+        <param name="publish_frequency" value="100"/>
+        <param name="use_tf_static"     value="true"/>
+    </node>
+
+    <!-- Open Rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_control)/config.rviz"
+          output="screen"/>
+
+    <!--    Interactive marker to command the end effector-->
+    <node name="interactive_marker_node" pkg="robot_control_ros" type="interactive_marker.py" output="screen">
+        <param name="subscribe_initial_pose"  value="false"/>
+        <param name="frame_id"                value="world"/>
+        <param name="target_pose_topic"       value="/target_pose"/>
+    </node>
+
+</launch>

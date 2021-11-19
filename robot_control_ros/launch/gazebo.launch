@@ -34,8 +34,10 @@
   <!-- Enable/disable Gazebo GUI -->
   <arg name="run_gui"                               default="true"/>
 
+  <arg name="robot"     default="panda"/>
+
   <!-- Path of robot description -->
-  <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/panda/panda.urdf.xacro"/>
+  <arg name="description_file"            default="$(find robot_control_assets)/assets/arms/$(arg robot)/$(arg robot).urdf.xacro"/>
 
   <!-- Load robot description for gazebo -->
   <param name="robot_description" command="$(find xacro)/xacro.py $(arg description_file) mesh_prefix:=package://robot_control_assets/"/>
@@ -54,9 +56,34 @@
   </include>
 
   <!-- Spawn robot in Gazebo -->
-  <arg name="inital_config" default="-J panda_joint1 0.0 -J panda_joint2 -0.473 -J panda_joint3 0.10720 -J panda_joint4 -1.937 -J panda_joint5 -0.1610 -J panda_joint6 1.48333 -J panda_joint7 0.75098"/>
+  <arg name="inital_config"
+       default="-J panda_joint1 0.0
+                -J panda_joint2 -0.473
+                -J panda_joint3 0.10720
+                -J panda_joint4 -1.937
+                -J panda_joint5 -0.1610
+                -J panda_joint6 1.48333
+                -J panda_joint7 0.75098" if="$(eval arg('robot')=='panda')"/>
+
+  <arg name="inital_config"
+       default="-J joint_1 0.0
+                -J joint_2 0.26
+                -J joint_3 3.14
+                -J joint_4 1.15
+                -J joint_5 -0.27
+                -J joint_6 1.25
+                -J joint_7 -1.17" if="$(eval arg('robot')=='kinova3')"/>
+
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"
-    args="-param /robot_description -urdf $(arg inital_config) -model panda"
+    args="-param /robot_description -urdf $(arg inital_config) -model $(arg robot)"
     output="screen"/>
 
 </launch>
+<!--
+        J joint_1 -0.18
+        -J joint_2 0.30
+        -J joint_3 0.31
+        -J joint_4 1.15
+        -J joint_5 -0.27
+        -J joint_6 1.25
+        -J joint_7 -1.17" if="$(eval arg('robot')=='kinova3') -->

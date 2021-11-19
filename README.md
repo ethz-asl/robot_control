@@ -1,18 +1,30 @@
 ### robot_control 
 [![Build Status](https://jenkins.asl.ethz.ch/buildStatus/icon?job=robot_control)](https://jenkins.asl.ethz.ch/job/robot_control/)
 
-### Installation
+Clone this repo with the recursive command: `git clone --recursive git@github.com:ethz-asl/robot_control.git` 
 
-Install the `pinocchio` library following the [instructions](https://stack-of-tasks.github.io/pinocchio/download.html) from the official documentation.
+## Dependencies
 
-#### Installing `pinocchio` bindings (Optional)
+- Install `orocos-kdl`: `sudo apt-get install ros-melodic-orocos-kdl`
+- Install `kdl-parser`: `sudo apt-get install ros-melodic-kdl-parser`
+- Install `pinocchio`: follow instructions reported [here](https://stack-of-tasks.github.io/pinocchio/download.html)
 
-Follow the instructions reported [here](https://github.com/conda-forge/pinocchio-feedstock). To install the python scripts for this package in the current conda environment (after conda has been activate) navigate to this directory and enter `pip install .`
+### Build and Run
+
+`catkin build robot_control robot_control_assets robot_control_bullet robot_control_ros`
+
+`source <catkin_ws>/devel/setup.bash`
 
 ### Examples
 
-Although `pybullet` is not a necessary dependency, it has been used for testing. An example is available [here](test/controllers/test_op_space_controller.py)
-where a robotic arm is controller and results are checked in a pybullet simulation.
+#### IK Controller
+In this example a Inverse Kinematic (IK) Controller computes the preferred
+joint configuration for a given desired end effector pose using nullspace to solver for the arm
+redundancy. The joint goal configuration is reached using a trapezoidal velocity profile. 
+Check the [controller configuration](robot_control_ros/params/controllers.yaml) for more parameters. 
+  
+`roslaunch robot_control_ros test_controller.launch simulation:=true robot:=kinova3`
+
 
 ### TODO 
 
