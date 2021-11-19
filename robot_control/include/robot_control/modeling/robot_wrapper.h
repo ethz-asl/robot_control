@@ -8,7 +8,6 @@
 #include "pinocchio/spatial/motion.hpp"
 
 namespace pin = pinocchio;
-using namespace Eigen;
 
 namespace rc {
 class RobotWrapper {
@@ -30,22 +29,22 @@ class RobotWrapper {
 
   int getDof() const;
 
-  VectorXd getRandomConfiguration() const;
-  VectorXd getNeutralConfiguration() const;
+  Eigen::VectorXd getRandomConfiguration() const;
+  Eigen::VectorXd getNeutralConfiguration() const;
   std::vector<std::string> getJointNames();
   int getJointId(std::string&);
 
   void forwardKinematics();
-  MatrixXd getJointJacobian(std::string& joint_name);
-  MatrixXd getFrameJacobian(std::string& frame_name);
-  void getAllFrameJacobians(const std::string& frame_name, MatrixXd&, MatrixXd&);
+  Eigen::MatrixXd getJointJacobian(std::string& joint_name);
+  Eigen::MatrixXd getFrameJacobian(std::string& frame_name);
+  void getAllFrameJacobians(const std::string& frame_name, Eigen::MatrixXd&, Eigen::MatrixXd&);
   pin::SE3& getFramePlacement(std::string& frame_name);
   pin::Motion getFrameVelocity(std::string& frame_name);
-  MatrixXd getInertia();
-  VectorXd& getNonLinearTerms();
+  Eigen::MatrixXd getInertia();
+  Eigen::VectorXd& getNonLinearTerms();
 
   // Changing state
-  void updateState(const VectorXd& new_q, const VectorXd& new_v, bool update_kinematics = true);
+  void updateState(const Eigen::VectorXd& new_q, const Eigen::VectorXd& new_v, bool update_kinematics = true);
   void computeAllTerms();
 };
 }

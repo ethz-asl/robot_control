@@ -6,8 +6,6 @@
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 
-using namespace Eigen;
-
 namespace rc {
 
 RobotWrapper::RobotWrapper(std::string& urdf_path) {
@@ -18,32 +16,32 @@ RobotWrapper::RobotWrapper() {}
 void RobotWrapper::initFromUrdf(std::string& urdf_path) {
   pin::urdf::buildModel(urdf_path, model);
   data = pin::Data(model);
-  VectorXd q0 = getNeutralConfiguration();
-  VectorXd v0 = VectorXd::Zero(model.nv);
+  Eigen::VectorXd q0 = getNeutralConfiguration();
+  Eigen::VectorXd v0 = Eigen::VectorXd::Zero(model.nv);
   updateState(q0, v0);
 }
 
 void RobotWrapper::initFromXml(std::string& xml_path, bool verbose) {
   pin::urdf::buildModelFromXML(xml_path, model, verbose);
   data = pin::Data(model);
-  VectorXd q0 = getNeutralConfiguration();
-  VectorXd v0 = VectorXd::Zero(model.nv);
+  Eigen::VectorXd q0 = getNeutralConfiguration();
+  Eigen::VectorXd v0 = Eigen::VectorXd::Zero(model.nv);
   updateState(q0, v0);
 }
 
 // Accessors
-const VectorXd& RobotWrapper::getQ() const { return q; }
-const VectorXd& RobotWrapper::getV() const { return v; }
+const Eigen::VectorXd& RobotWrapper::getQ() const { return q; }
+const Eigen::VectorXd& RobotWrapper::getV() const { return v; }
 
 int RobotWrapper::getDof() const {
   return model.nv;
 }
 
-VectorXd RobotWrapper::getRandomConfiguration() const {
+Eigen::VectorXd RobotWrapper::getRandomConfiguration() const {
   return pin::randomConfiguration(model);
 }
 
-VectorXd RobotWrapper::getNeutralConfiguration() const {
+Eigen::VectorXd RobotWrapper::getNeutralConfiguration() const {
   return pin::neutral(model);
 }
 
@@ -56,7 +54,7 @@ int RobotWrapper::getJointId(std::string &name) {
 }
 
 // Changing state
-void RobotWrapper::updateState(const VectorXd& new_q, const VectorXd& new_v, bool update_kinematics) {
+void RobotWrapper::updateState(const Eigen::VectorXd& new_q, const Eigen::VectorXd& new_v, bool update_kinematics) {
   q = new_q;
   v = new_v;
   if (update_kinematics) forwardKinematics();
@@ -67,16 +65,16 @@ void RobotWrapper::forwardKinematics() {
   pin::updateFramePlacements(model, data);
 }
 
-MatrixXd RobotWrapper::getJointJacobian(std::string& joint_name) {
-  Matrix<double, 6, Dynamic> J(6, model.nv);
+Eigen::MatrixXd RobotWrapper::getJointJacobian(std::string& joint_name) {
+  Eigen::Matrix<double, 6, Eigen::Dynamic> J(6, model.nv);
   auto joint_id = model.getJointId(joint_name);
   forwardKinematics();
   pin::getJointJacobian(model, data, joint_id, pin::ReferenceFrame::LOCAL, J);
   return J;
 }
 
-MatrixXd RobotWrapper::getFrameJacobian(std::string& frame_name) {
-  Matrix<double, 6, Dynamic> J(6, model.nv);
+Eigen::MatrixXd RobotWrapper::getFrameJacobian(std::string& frame_name) {
+  Eigen::Matrix<double, 6, Eigen::Dynamic> J(6, model.nv);
   auto frame_id = model.getFrameId(frame_name);
   pin::computeJointJacobians(model, data, q);
   pin::updateFramePlacements(model, data);
@@ -103,12 +101,12 @@ pin::Motion RobotWrapper::getFrameVelocity(std::string& frame_name) {
   return pin::getFrameVelocity(model, data, frame_id, pin::ReferenceFrame::LOCAL);
 }
 
-MatrixXd RobotWrapper::getInertia() {
+Eigen::MatrixXd RobotWrapper::getInertia() {
   data.M.triangularView<Eigen::StrictlyLower>() =
   data.M.transpose().template triangularView<Eigen::StrictlyLower>();
   return data.M;}
 
-VectorXd& RobotWrapper::getNonLinearTerms() { return data.nle; }
+Eigen::VectorXd& RobotWrapper::getNonLinearTerms() { return data.nle; }
 
 void RobotWrapper::computeAllTerms() {
   pin::computeAllTerms(model, data, q, v);

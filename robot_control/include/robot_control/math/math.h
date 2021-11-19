@@ -11,23 +11,21 @@
 #include <Eigen/SVD>
 #include <iostream>
 
-using namespace Eigen;
-
 namespace linear_algebra {
 
 class DLSSolver {
-    JacobiSVD<MatrixXd>& solver;
+    Eigen::JacobiSVD<Eigen::MatrixXd>& solver;
     double max_damping;
     double sigma_min_clamp;
-    VectorXd sigma_inverse;
+    Eigen::VectorXd sigma_inverse;
 
     public:
-    DLSSolver(JacobiSVD<MatrixXd>& solver, double max_damping = 0.02, double sigma_min_clamp = 0.06);
-    void compute(const MatrixXd& A);
-    MatrixXd matrix() const;
-    VectorXd solve(const VectorXd& x) const;
+    DLSSolver(Eigen::JacobiSVD<Eigen::MatrixXd>& solver, double max_damping = 0.02, double sigma_min_clamp = 0.06);
+    void compute(const Eigen::MatrixXd& A);
+    Eigen::MatrixXd matrix() const;
+    Eigen::VectorXd solve(const Eigen::VectorXd& x) const;
 };
 
-MatrixXd computeNullSpace(const MatrixXd& A);
+Eigen::MatrixXd computeNullSpace(const Eigen::MatrixXd& A);
 
 } // end of namespace linear_algebra
