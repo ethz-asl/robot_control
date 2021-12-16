@@ -12,7 +12,8 @@ if (CATKIN_BUILD)
   catkin_package(
     LIBRARIES ${PROJECT_NAME}
     INCLUDE_DIRS include
-    CATKIN_DEPENDS pybind11_catkin)
+    CATKIN_DEPENDS pybind11_catkin
+    DEPENDS pinocchio)
 endif()
 
 add_subdirectory(submodules/pybind11)
