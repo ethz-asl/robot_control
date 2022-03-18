@@ -8,12 +8,12 @@
 
 namespace rc {
 
-RobotWrapper::RobotWrapper(std::string& urdf_path) {
+RobotWrapper::RobotWrapper(const std::string& urdf_path) {
   initFromUrdf(urdf_path);
 }
 RobotWrapper::RobotWrapper() {}
 
-void RobotWrapper::initFromUrdf(std::string& urdf_path) {
+void RobotWrapper::initFromUrdf(const std::string& urdf_path) {
   pin::urdf::buildModel(urdf_path, model);
   data = pin::Data(model);
   Eigen::VectorXd q0 = getNeutralConfiguration();
@@ -21,7 +21,7 @@ void RobotWrapper::initFromUrdf(std::string& urdf_path) {
   updateState(q0, v0);
 }
 
-void RobotWrapper::initFromXml(std::string& xml_path, bool verbose) {
+void RobotWrapper::initFromXml(const std::string& xml_path, bool verbose) {
   pin::urdf::buildModelFromXML(xml_path, model, verbose);
   data = pin::Data(model);
   Eigen::VectorXd q0 = getNeutralConfiguration();
@@ -49,7 +49,7 @@ std::vector<std::string> RobotWrapper::getJointNames() {
   return model.names;
 }
 
-int RobotWrapper::getJointId(std::string &name) {
+int RobotWrapper::getJointId(const std::string &name) {
   return model.getJointId(name);
 }
 
@@ -65,20 +65,20 @@ void RobotWrapper::forwardKinematics() {
   pin::updateFramePlacements(model, data);
 }
 
-Eigen::MatrixXd RobotWrapper::getJointJacobian(std::string& joint_name) {
+Eigen::MatrixXd RobotWrapper::getJointJacobian(const std::string& joint_name) {
   Eigen::Matrix<double, 6, Eigen::Dynamic> J(6, model.nv);
   auto joint_id = model.getJointId(joint_name);
   forwardKinematics();
-  pin::getJointJacobian(model, data, joint_id, pin::ReferenceFrame::LOCAL, J);
+  pin::getJointJacobian(model, data, joint_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);
   return J;
 }
 
-Eigen::MatrixXd RobotWrapper::getFrameJacobian(std::string& frame_name) {
+Eigen::MatrixXd RobotWrapper::getFrameJacobian(const std::string& frame_name) {
   Eigen::Matrix<double, 6, Eigen::Dynamic> J(6, model.nv);
   auto frame_id = model.getFrameId(frame_name);
   pin::computeJointJacobians(model, data, q);
   pin::updateFramePlacements(model, data);
-  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL, J);
+  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);
   return J;
 }
 
@@ -87,18 +87,18 @@ void RobotWrapper::getAllFrameJacobians(const std::string& frame_name, Eigen::Ma
   pin::computeJointJacobians(model, data, q);
   pin::computeJointJacobiansTimeVariation(model, data, q, v);
   pin::updateFramePlacements(model, data);
-  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL, J);
-  pin::getFrameJacobianTimeVariation(model, data, frame_id, pin::ReferenceFrame::LOCAL, dJ);
+  pin::getFrameJacobian(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);
+  pin::getFrameJacobianTimeVariation(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED, dJ);
 }
 
-pin::SE3& RobotWrapper::getFramePlacement(std::string& frame_name) {
+pin::SE3& RobotWrapper::getFramePlacement(const std::string& frame_name) {
   auto frame_id = model.getFrameId(frame_name);
   return data.oMf[frame_id];
 }
 
-pin::Motion RobotWrapper::getFrameVelocity(std::string& frame_name) {
+pin::Motion RobotWrapper::getFrameVelocity(const std::string& frame_name) {
   auto frame_id = model.getFrameId(frame_name);
-  return pin::getFrameVelocity(model, data, frame_id, pin::ReferenceFrame::LOCAL);
+  return pin::getFrameVelocity(model, data, frame_id, pin::ReferenceFrame::LOCAL_WORLD_ALIGNED);
 }
 
 Eigen::MatrixXd RobotWrapper::getInertia() {
