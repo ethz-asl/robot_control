@@ -17,11 +17,11 @@ class RobotWrapper {
 
   public:
   Eigen::VectorXd q, v;
-  RobotWrapper(std::string& urdf_path);
+  RobotWrapper(const std::string& urdf_path);
   RobotWrapper();
 
-  void initFromUrdf(std::string& urdf_path);
-  void initFromXml(std::string& xml_file, bool verbose=false);
+  void initFromUrdf(const std::string& urdf_path);
+  void initFromXml(const std::string& xml_file, bool verbose=false);
 
   // Accessors
   const Eigen::VectorXd& getQ() const;
@@ -32,14 +32,14 @@ class RobotWrapper {
   Eigen::VectorXd getRandomConfiguration() const;
   Eigen::VectorXd getNeutralConfiguration() const;
   std::vector<std::string> getJointNames();
-  int getJointId(std::string&);
+  int getJointId(const std::string&);
 
   void forwardKinematics();
-  Eigen::MatrixXd getJointJacobian(std::string& joint_name);
-  Eigen::MatrixXd getFrameJacobian(std::string& frame_name);
+  Eigen::MatrixXd getJointJacobian(const std::string& joint_name);
+  Eigen::MatrixXd getFrameJacobian(const std::string& frame_name);
   void getAllFrameJacobians(const std::string& frame_name, Eigen::MatrixXd&, Eigen::MatrixXd&);
-  pin::SE3& getFramePlacement(std::string& frame_name);
-  pin::Motion getFrameVelocity(std::string& frame_name);
+  pin::SE3& getFramePlacement(const std::string& frame_name);
+  pin::Motion getFrameVelocity(const std::string& frame_name);
   Eigen::MatrixXd getInertia();
   Eigen::VectorXd& getNonLinearTerms();
 
