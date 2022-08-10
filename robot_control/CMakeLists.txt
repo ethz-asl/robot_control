@@ -5,7 +5,7 @@ option(CATKIN_BUILD "Unset if building for python 3 through setup.py." ON)
 
 find_package(Eigen3 REQUIRED 3.3)
 find_package(pinocchio REQUIRED)
-find_package(PythonInterp REQUIRED)
+#find_package(PythonInterp REQUIRED) # Causes issues when building for the first time (Could NOT find PythonInterp (missing: PYTHON_EXECUTABLE))
 
 if (CATKIN_BUILD)
   find_package(catkin REQUIRED COMPONENTS pybind11_catkin)
